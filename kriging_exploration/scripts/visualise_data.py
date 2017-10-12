@@ -12,9 +12,9 @@ import matplotlib as mpl
 import matplotlib.cm as cm
 
 #import satellite
-from satellite import SatelliteImage
+from kriging_exploration.satellite import SatelliteImage
 #from map_coords import MapCoords
-from data_grid import DataGrid
+from kriging_exploration.data_grid import DataGrid
 #from krigging_data import KriggingData
 
 
@@ -37,6 +37,7 @@ class SimpleDataVisualiser(object):
         self.grid = DataGrid('limits.coords', cell_size)
         
         self.image = self.satellite.base_image.copy()
+        
         
         while(self.running):
             cv2.imshow('image', self.image)

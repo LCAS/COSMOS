@@ -43,8 +43,8 @@ class DataGrid(object):
 
         
         lims= [np.min(vals), np.max(vals)]
-        a = KriggingData(self.shape)
-        a.add_data(data, lims)
+        a = KriggingData(self.shape, lims)
+        a.add_data(data)
         self.data.append(a)
         #print len(self.data_coords), self.data_coords[0]
     

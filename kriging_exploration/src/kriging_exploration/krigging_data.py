@@ -16,14 +16,15 @@ class KriggingDataPoint(object):
 
 
 class KriggingData(object):
-    def __init__(self, shape):
+    def __init__(self, shape, lims):
         self.shape = shape
+        self.lims = lims
+        
         self.orig_data=[]
         self.gridx = np.arange(0.0, shape[1], 1)
         self.gridy = np.arange(0.0, shape[0], 1)
             
-    def add_data(self, data, lims):
-        self.lims = lims
+    def add_data(self, data):
         if hasattr(data, '__iter__'):
             for i in data:
                 self.orig_data.append(i)
