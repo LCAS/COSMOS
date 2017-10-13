@@ -73,20 +73,20 @@ class SimpleDataVisualiser(object):
             
         elif k == ord('t'):
             print "DATA"
-            self.grid.data[0].do_krigging()
+            self.grid.models[0].do_krigging()
 
-            vmin = np.floor(self.grid.data[0].lims[0])
-            vmax = np.ceil(self.grid.data[0].lims[1])
+            vmin = np.floor(self.grid.models[0].lims[0])
+            vmax = np.ceil(self.grid.models[0].lims[1])
             print vmin, vmax            
             
             norm = mpl.colors.Normalize(vmin=vmin, vmax=vmax)
             cmap = cm.jet
             colmap = cm.ScalarMappable(norm=norm, cmap=cmap)            
                        
-            for i in range(self.grid.data[0].shape[0]):
-                for j in range(self.grid.data[0].shape[1]):
+            for i in range(self.grid.models[0].shape[0]):
+                for j in range(self.grid.models[0].shape[1]):
                     cell = self.grid.cells[i][j]
-                    a= colmap.to_rgba(int(self.grid.data[0].output[i][j]))
+                    a= colmap.to_rgba(int(self.grid.models[0].output[i][j]))
                     b= (int(a[0]*255), int(a[1]*255), int(a[2]*255), int(a[3]*50))
                     self.satellite.draw_cell(cell, self.grid.cell_size, b, thickness=-1)
 
@@ -96,18 +96,18 @@ class SimpleDataVisualiser(object):
 
         elif k == ord('v'):
             
-            vmin = np.floor(self.grid.data[0].min_var*100)
-            vmax = np.ceil(self.grid.data[0].max_var*100)
+            vmin = np.floor(self.grid.models[0].min_var*100)
+            vmax = np.ceil(self.grid.models[0].max_var*100)
             print vmin, vmax            
             
             norm = mpl.colors.Normalize(vmin=vmin, vmax=vmax)
             cmap = cm.jet
             colmap = cm.ScalarMappable(norm=norm, cmap=cmap)            
                        
-            for i in range(self.grid.data[0].shape[0]):
-                for j in range(self.grid.data[0].shape[1]):
+            for i in range(self.grid.models[0].shape[0]):
+                for j in range(self.grid.models[0].shape[1]):
                     cell = self.grid.cells[i][j]
-                    a= colmap.to_rgba(int((1-self.grid.data[0].variance[i][j])*100))
+                    a= colmap.to_rgba(int((1-self.grid.models[0].variance[i][j])*100))
                     b= (int(a[0]*255), int(a[1]*255), int(a[2]*255), int(a[3]*50))
                     self.satellite.draw_cell(cell, self.grid.cell_size, b, thickness=-1)
 
@@ -117,17 +117,17 @@ class SimpleDataVisualiser(object):
 
         elif k == ord('i'):
             print "TEST"
-            self.grid._load_data('Iains_data0.dat')
+            self.grid._load_model_from_file('Iains_data0.dat')
             print "LIMS:"
-            vmin = np.floor(self.grid.data[0].lims[0])
-            vmax = np.ceil(self.grid.data[0].lims[1])
+            vmin = np.floor(self.grid.models[0].lims[0])
+            vmax = np.ceil(self.grid.models[0].lims[1])
             print vmin, vmax            
             
             norm = mpl.colors.Normalize(vmin=vmin, vmax=vmax)
             cmap = cm.jet
             colmap = cm.ScalarMappable(norm=norm, cmap=cmap)
 
-            for i in self.grid.data[0].orig_data:
+            for i in self.grid.models[0].orig_data:
                 cell = self.grid.cells[i.y][i.x]
                 #print i.value
                 a= colmap.to_rgba(int(i.value))                

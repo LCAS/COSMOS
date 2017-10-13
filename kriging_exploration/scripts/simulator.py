@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import signal
+import yaml
 import numpy as np
 
 import cv2
@@ -18,29 +19,29 @@ from kriging_exploration.data_grid import DataGrid
 #from krigging_data import KriggingData
 
 
-def load_data(data_fn):
-#    data=[]
+def data_to_yaml(data_fn):
+    mods = {}
+    mods['names']=['0.0 cm', '2.5 cm' ,'5.0 cm', '7.5 cm', '10.0 cm', '12.5 cm', '15.0 cm', '17.5 cm', '20.0 cm', '22.5 cm' ,'25.0 cm', '27.5 cm', '30.0 cm', '32.5 cm', '35.0 cm', '37.5 cm', '40.0 cm', '42.5 cm', '45.0 cm']
+    mods['data']=[]
 #    vals=[]
     print "open: " + data_fn
     f = open(data_fn, 'r')
     for line in f:
         line=line.strip('\n')
         a=line.split(';')
-        print a
-        b=MapCoords(float(a[0]),float(a[1]))
-        print b
-        
-#        cx = int(np.floor((b.easting - self.swc.easting)/self.cell_size))
-#        cy = int(np.floor(((b.northing - self.swc.northing)/self.cell_size)))
-#        data.append(KriggingDataPoint(b,(cx,cy),float(a[2])))
-#        vals.append(float(a[2]))
-
+        val={}
+        val['position']={'lat':float(a[0]), 'lon':float(a[1])}
+        val['data']= [float(i) for i in a[2:]]
+        mods['data'].append(val)
     
-#    lims= [np.min(vals), np.max(vals)]
-#    a = KriggingData(self.shape)
-#    a.add_data(data, lims)
-#    self.data.append(a)
-    #print len(self.data_coords), self.data_coords[0]
+    print mods['data']
+    yml = yaml.safe_dump(mods, default_flow_style=False)
+    print yml
+    filename = data_fn+'.yaml'
+    fh = open(filename, "w")
+    s_output = str(yml)
+    fh.write(s_output)
+    fh.close
 
 
 class simulator(object):
@@ -62,7 +63,8 @@ class simulator(object):
         self.grid = DataGrid('limits.coords', cell_size)
         
         self.image = self.satellite.base_image.copy()
-        
+        self.current_model=-1
+        self.n_models=0
         
         while(self.running):
             cv2.imshow('image', self.image)
@@ -142,27 +144,45 @@ class simulator(object):
 #            self.image = self.satellite.base_image.copy()
 
         elif k == ord('i'):
-            print "TEST"
-            load_data('Iains2.csv')
+            self.grid.load_data_from_yaml('Iains2.yaml')
 #            self.grid._load_data('Iains_data0.dat')
 #            print "LIMS:"
-#            vmin = np.floor(self.grid.data[0].lims[0])
-#            vmax = np.ceil(self.grid.data[0].lims[1])
-#            print vmin, vmax            
-#            
-#            norm = mpl.colors.Normalize(vmin=vmin, vmax=vmax)
-#            cmap = cm.jet
-#            colmap = cm.ScalarMappable(norm=norm, cmap=cmap)
-#
-#            for i in self.grid.data[0].orig_data:
-#                cell = self.grid.cells[i.y][i.x]
-#                #print i.value
-#                a= colmap.to_rgba(int(i.value))                
-#                b= (int(a[0]*255), int(a[1]*255), int(a[2]*255), int(a[3]*50))
-#                #print a, b
-#                self.satellite.draw_cell(cell, self.grid.cell_size, b, thickness=-1)
-#            self.image = self.satellite.base_image.copy()                
+            self.n_models=len(self.grid.models)
+            self.current_model=0
+            self.draw_inputs(self.current_model)
 
+        elif k == ord('>'):
+            self.current_model+=1
+            if self.current_model >= self.n_models:
+                self.current_model=0
+            self.draw_inputs(self.current_model)
+            
+
+        elif k == ord('<'):
+            self.current_model-=1
+            if self.current_model < 0:
+                self.current_model=self.n_models-1
+            self.draw_inputs(self.current_model)
+
+
+
+    def draw_inputs(self, nm):
+        vmin = np.floor(self.grid.models[nm].lims[0])
+        vmax = np.ceil(self.grid.models[nm].lims[1])
+        print vmin, vmax            
+#            
+        norm = mpl.colors.Normalize(vmin=vmin, vmax=vmax)
+        cmap = cm.jet
+        colmap = cm.ScalarMappable(norm=norm, cmap=cmap)
+#
+        for i in self.grid.models[nm].orig_data:
+            cell = self.grid.cells[i.y][i.x]
+#                #print i.value
+            a= colmap.to_rgba(int(i.value))                
+            b= (int(a[0]*255), int(a[1]*255), int(a[2]*255), int(a[3]*50))
+#                #print a, b
+            self.satellite.draw_cell(cell, self.grid.cell_size, b, thickness=-1)
+        self.image = self.satellite.base_image.copy()
 
 
     def signal_handler(self, signal, frame):

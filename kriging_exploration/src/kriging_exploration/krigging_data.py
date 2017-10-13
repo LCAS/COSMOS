@@ -16,9 +16,10 @@ class KriggingDataPoint(object):
 
 
 class KriggingData(object):
-    def __init__(self, shape, lims):
+    def __init__(self, shape, name='default'):
+        self.name= name
         self.shape = shape
-        self.lims = lims
+        #self.lims = lims
         
         self.orig_data=[]
         self.gridx = np.arange(0.0, shape[1], 1)
@@ -30,6 +31,10 @@ class KriggingData(object):
                 self.orig_data.append(i)
         else:
             self.orig_data.append(data)
+        
+        vals = [x.value for x in self.orig_data]
+        self.lims = [np.min(vals), np.max(vals)]
+        print self.lims
 
     def do_krigging(self):
         datablah=[]
