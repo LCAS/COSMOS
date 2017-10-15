@@ -42,7 +42,7 @@ class DataGrid(object):
                 if j['data'][i] >0:
                     #print j['position']
                     b = MapCoords(j['position']['lat'],j['position']['lon'])
-                    cx, cy = self.get_cell_inds(b)
+                    cx, cy = self.get_cell_inds_from_coords(b)
                     dt.append(KriggingDataPoint(b,(cx,cy),j['data'][i]))
                     print cx, cy
                     #print b
@@ -62,7 +62,7 @@ class DataGrid(object):
             b=MapCoords(float(a[0]),float(a[1]))
 #            cx = int(np.floor((b.easting - self.swc.easting)/self.cell_size))
 #            cy = int(np.floor(((b.northing - self.swc.northing)/self.cell_size)))
-            cx, cy = self.get_cell_inds(b)
+            cx, cy = self.get_cell_inds_from_coords(b)
             data.append(KriggingDataPoint(b,(cx,cy),float(a[2])))
             vals.append(float(a[2]))
 
@@ -74,14 +74,24 @@ class DataGrid(object):
         self.models.append(a)
         #print len(self.data_coords), self.data_coords[0]
         
-    def get_cell_inds(self, point):
+    def get_cell_inds_from_coords(self, point):
         cx = int(np.floor((point.easting - self.swc.easting)/self.cell_size))
         cy = int(np.floor(((point.northing - self.swc.northing)/self.cell_size)))
         return cx, cy
     
+
+#    def get_cell_inds_from_pix(self, x, y):
+#        return x, y
+    
     
     def set_limits(self, limits):
         self.limits = limits
+
+
+    def get_max_min_vals(self):
+        self.valmin = np.floor(np.min([x.lims[0] for x in self.models]))
+        self.valmax = np.ceil(np.max([x.lims[1] for x in self.models]))
+        return self.valmin, self.valmax
 
     
     def create_grid(self, cell_size):

@@ -66,10 +66,38 @@ class simulator(object):
         self.current_model=-1
         self.n_models=0
         
+        cv2.namedWindow('simulator')
+        cv2.setMouseCallback('simulator', self.click_callback)
+        
         while(self.running):
-            cv2.imshow('image', self.image)
+            cv2.imshow('simulator', self.image)
             k = cv2.waitKey(20) & 0xFF
             self._change_mode(k)
+
+
+
+    def click_callback(self, event, x, y, flags, param):
+#        print event, x, y
+#        xval = x#(x * self.origin[2]) + self.origin[0]
+#        yval = y#-((y * self.origin[2]) - self.origin[1])
+#        dists = self.get_distances_to_pose(xval, yval)
+#
+        if event == cv2.EVENT_LBUTTONDOWN:
+            click_coord = self.satellite._pix2coord(x,y)
+            print self.grid.get_cell_inds_from_coords(click_coord)
+            self.satellite.draw_coordinate(click_coord,(0,255,0,128))
+            self.image = self.satellite.base_image.copy()
+#            try:
+#                getattr(self, 'cb_' + self.current_mode)(dists, xval, yval)
+#            except AttributeError:
+#                pass
+#
+#        if event == cv2.EVENT_LBUTTONUP:
+#            if self.current_mode == 'move' and self.moving:
+#                self.update_node_position(self.movingnode, xval, yval)
+#                # back to move mode
+#                self._set_mode('move')
+#                self.moving = False
 
 
     def _change_mode(self, k):
@@ -146,7 +174,10 @@ class simulator(object):
         elif k == ord('i'):
             self.grid.load_data_from_yaml('Iains2.yaml')
 #            self.grid._load_data('Iains_data0.dat')
-#            print "LIMS:"
+
+            self.vmin, self.vmax = self.grid.get_max_min_vals()
+            print "LIMS: " + str(self.vmin) + " " + str(self.vmax)
+
             self.n_models=len(self.grid.models)
             self.current_model=0
             self.draw_inputs(self.current_model)
@@ -167,11 +198,12 @@ class simulator(object):
 
 
     def draw_inputs(self, nm):
-        vmin = np.floor(self.grid.models[nm].lims[0])
-        vmax = np.ceil(self.grid.models[nm].lims[1])
-        print vmin, vmax            
-#            
-        norm = mpl.colors.Normalize(vmin=vmin, vmax=vmax)
+#        vmin = np.floor(self.grid.models[nm].lims[0])
+#        vmax = np.ceil(self.grid.models[nm].lims[1])
+#        print vmin, vmax            
+#
+        font = cv2.FONT_HERSHEY_SIMPLEX
+        norm = mpl.colors.Normalize(vmin=self.vmin, vmax=self.vmax)
         cmap = cm.jet
         colmap = cm.ScalarMappable(norm=norm, cmap=cmap)
 #
@@ -179,10 +211,35 @@ class simulator(object):
             cell = self.grid.cells[i.y][i.x]
 #                #print i.value
             a= colmap.to_rgba(int(i.value))                
-            b= (int(a[0]*255), int(a[1]*255), int(a[2]*255), int(a[3]*50))
+            b= (int(a[2]*255), int(a[1]*255), int(a[0]*255), int(a[3]*50))
 #                #print a, b
             self.satellite.draw_cell(cell, self.grid.cell_size, b, thickness=-1)
+
         self.image = self.satellite.base_image.copy()
+        cv2.putText(self.image, self.grid.models[nm].name, (int(520), int(20)), font, 0.8, (200, 200, 200), 2)
+        self.draw_legend(self.vmin, self.vmax)
+    
+    
+    def draw_legend(self, vmin, vmax):
+        step = (vmax - vmin)/(600-40)
+        norm = mpl.colors.Normalize(vmin=self.vmin, vmax=self.vmax)
+        cmap = cm.jet
+#        cmap = cm.plasma
+#        cmap = cm.gnuplot
+        colmap = cm.ScalarMappable(norm=norm, cmap=cmap)
+
+        vp = range(int(np.floor(vmin)),int(np.ceil(vmax)), int(np.ceil(step)))
+        print len(vp)        
+
+        if step>1.0:
+            ind = 0
+            while ind < 560:
+#                print int(vmin+(ind*step))
+                a= colmap.to_rgba(int(vmin+(ind*step)))                
+                b= (int(a[2]*255), int(a[1]*255), int(a[0]*255), int(a[3]*50))                
+                cv2.rectangle(self.image, (int(ind+40), int(580)), (int(ind+1+40), int(600)), b , thickness=-1)
+                ind+=1
+#            cv2.rectangle(self.image, (int(40), int(580)), (int(600), int(600)), (200,0,0,0), thickness=-1)
 
 
     def signal_handler(self, signal, frame):

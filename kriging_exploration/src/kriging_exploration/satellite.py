@@ -48,6 +48,12 @@ class SatelliteImage(object):
         deast = ((point.easting - self.centre.easting)/self.res)  + (self.size/2)
         return deast, dnorth        
         
+    def _pix2coord(self, x, y):
+        xcord = (x - (self.size/2))*self.res
+        ycord = -(y - (self.size/2))*self.res
+        click_coord = self.centre._get_rel_point(xcord,ycord)
+        return click_coord
+        
     def _latlong2pix(self, lat, lon):
         point = MapCoords(lat, lon)
         deast, dnorth = self._coord2pix(point)
