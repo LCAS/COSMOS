@@ -77,6 +77,10 @@ class DataGrid(object):
     def get_cell_inds_from_coords(self, point):
         cx = int(np.floor((point.easting - self.swc.easting)/self.cell_size))
         cy = int(np.floor(((point.northing - self.swc.northing)/self.cell_size)))
+        if cx >= self.shape[1] or cx<0:
+            cx =-1
+        if cy >= self.shape[0] or cy<0:
+            cy =-1
         return cx, cy
     
 
