@@ -1,5 +1,6 @@
 import utm
 
+
 class MapCoords(object):
 
     def __init__(self, lat, lon):

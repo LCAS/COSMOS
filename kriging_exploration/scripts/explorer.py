@@ -17,7 +17,7 @@ import rospy
 import std_msgs
 
 from cosmos_msgs.msg import KrigInfo
-from cosmos_msgs.msg import KrigMsg
+#from cosmos_msgs.msg import KrigMsg
 
 #import satellite
 from kriging_exploration.satellite import SatelliteImage
@@ -26,6 +26,9 @@ from kriging_exploration.data_grid import DataGrid
 #from krigging_data import KriggingData
 
 
+def coord_from_satnav_fix(msg):
+    a = MapCoords(msg.latitude, msg.longitude)
+    return a
 
 
 class explorer(object):
@@ -45,12 +48,15 @@ class explorer(object):
 
         
         signal.signal(signal.SIGINT, self.signal_handler)
-        self.data_pub = rospy.Publisher('/kriging_data', KrigInfo, latch=True, queue_size=1)
 
 
         print "Loading Satellite Image"
         self.satellite = SatelliteImage(lat_deg, lon_deg, zoom, size)
         self.grid = DataGrid('limits.coords', cell_size)
+
+
+        rospy.loginfo("Subscribing to Krig Info")
+        rospy.Subscriber("/kriging_data", KrigInfo, self.data_callback)
 
         
         self.image = self.satellite.base_image.copy()
@@ -58,6 +64,12 @@ class explorer(object):
             cv2.imshow('explorer', self.image)
             k = cv2.waitKey(20) & 0xFF
             self._change_mode(k)
+
+
+    def data_callback(self, msg):
+        point_coord = coord_from_satnav_fix(msg.coordinates)
+        for i in msg.data:
+            self.grid.add_data_point(i.model_name, point_coord, i.measurement)
 
 
     def krieg_all_mmodels(self):

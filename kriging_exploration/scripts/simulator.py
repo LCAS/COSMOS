@@ -112,8 +112,8 @@ class simulator(object):
                 hmm = KrigInfo()               
                 hmm.header = std_msgs.msg.Header()
                 hmm.header.stamp = rospy.Time.now() 
-                hmm.coordinate.latitude = click_coord.lat
-                hmm.coordinate.longitude = click_coord.lon
+                hmm.coordinates.latitude = click_coord.lat
+                hmm.coordinates.longitude = click_coord.lon
                 
                 for i in self.grid.models:
                     mmh = KrigMsg()

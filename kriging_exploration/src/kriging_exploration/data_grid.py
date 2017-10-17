@@ -49,7 +49,20 @@ class DataGrid(object):
                     print j['data'][i]
             kd.add_data(dt)
             self.models.append(kd)
-                    
+    
+    def add_data_point(self, model_name, coord, value):
+        
+        model_names=[x.name for x in self.models]
+        
+        print model_name
+        
+        print coord
+        print value
+        
+        if model_name in model_names:
+            print "Known Model"
+        else:
+            print "Need to create a new model"
     
     def _load_model_from_file(self, data_fn, name='default'):
         data=[]
