@@ -68,7 +68,7 @@ class simulator(object):
         cv2.setMouseCallback('simulator', self.click_callback)
         
         signal.signal(signal.SIGINT, self.signal_handler)
-        self.data_pub = rospy.Publisher('/kriging_data', KrigInfo, latch=True, queue_size=1)
+        self.data_pub = rospy.Publisher('/kriging_data', KrigInfo, latch=False, queue_size=1)
 
 
         print "Loading Satellite Image"

@@ -71,6 +71,8 @@ class explorer(object):
         for i in msg.data:
             self.grid.add_data_point(i.model_name, point_coord, i.measurement)
 
+        self.vmin, self.vmax = self.grid.get_max_min_vals()
+        self.n_models=len(self.grid.models)
 
     def krieg_all_mmodels(self):
         for i in self.grid.models:
@@ -98,6 +100,7 @@ class explorer(object):
             self.draw_inputs(self.current_model)
 
         elif k == ord('t'):
+            self.krieg_all_mmodels()
             self.draw_mode='krigging'
             self.draw_krigged(self.current_model)
 

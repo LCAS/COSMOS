@@ -59,10 +59,16 @@ class DataGrid(object):
         print coord
         print value
         
-        if model_name in model_names:
-            print "Known Model"
-        else:
-            print "Need to create a new model"
+        if model_name not in model_names:
+            a = KriggingData(self.shape, model_name)
+            self.models.append(a)
+            model_names=[x.name for x in self.models]
+            
+        modind = model_names.index(model_name)
+        
+        cx, cy = self.get_cell_inds_from_coords(coord)
+        self.models[modind].add_data(KriggingDataPoint(coord,(cx,cy), value))
+        
     
     def _load_model_from_file(self, data_fn, name='default'):
         data=[]
