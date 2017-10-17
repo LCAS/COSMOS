@@ -74,6 +74,7 @@ class DataGrid(object):
         self.models.append(a)
         #print len(self.data_coords), self.data_coords[0]
         
+
     def get_cell_inds_from_coords(self, point):
         cx = int(np.floor((point.easting - self.swc.easting)/self.cell_size))
         cy = int(np.floor(((point.northing - self.swc.northing)/self.cell_size)))
