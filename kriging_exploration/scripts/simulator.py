@@ -293,6 +293,7 @@ class simulator(object):
     
     
     def draw_legend(self, vmin, vmax):
+        font = cv2.FONT_HERSHEY_SIMPLEX
         step = (vmax - vmin)/(600-40)
         norm = mpl.colors.Normalize(vmin=self.vmin, vmax=self.vmax)
         cmap = cm.jet
@@ -312,6 +313,13 @@ class simulator(object):
                 cv2.rectangle(self.image, (int(ind+40), int(580)), (int(ind+1+40), int(600)), b , thickness=-1)
                 ind+=1
 #            cv2.rectangle(self.image, (int(40), int(580)), (int(600), int(600)), (200,0,0,0), thickness=-1)
+
+        a= colmap.to_rgba(int(vmin))
+        b= (int(a[2]*255), int(a[1]*255), int(a[0]*255), int(a[3]*50))
+        cv2.putText(self.image, str(self.vmin) + " Kpa", (int(5), int(575)), font, 0.6, b, 2)
+        a= colmap.to_rgba(int(vmax))
+        b= (int(a[2]*255), int(a[1]*255), int(a[0]*255), int(a[3]*50))
+        cv2.putText(self.image, str(self.vmax) + " Kpa", (int(520), int(575)), font, 0.6, b, 2)
 
 
     def signal_handler(self, signal, frame):

@@ -229,8 +229,6 @@ class explorer(object):
         step = (vmax - vmin)/(600-40)
         norm = mpl.colors.Normalize(vmin=self.vmin, vmax=self.vmax)
         cmap = cm.jet
-#        cmap = cm.plasma
-#        cmap = cm.gnuplot
         colmap = cm.ScalarMappable(norm=norm, cmap=cmap)
 
         vp = range(int(np.floor(vmin)),int(np.ceil(vmax)), int(np.ceil(step)))
