@@ -1,6 +1,7 @@
 import utm
 
 
+
 class MapCoords(object):
 
     def __init__(self, lat, lon):
@@ -27,3 +28,8 @@ class MapCoords(object):
         for i in b:
                 s = s + str(i) + ': ' + str(self.__getattribute__(i)) + '\n'
         return s
+
+
+def coord_from_satnav_fix(msg):
+    a = MapCoords(msg.latitude, msg.longitude)
+    return a
