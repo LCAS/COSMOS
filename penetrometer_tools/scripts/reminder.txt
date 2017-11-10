@@ -1,0 +1,1 @@
+rosrun gps_common utm_odometry_node navsat_fix:=fix odom:=gps_odom

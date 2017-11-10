@@ -1,8 +1,11 @@
 #import numpy as np
 import cv2
+from matplotlib import colors as mcolors
+
 from kriging_exploration.satellite import SatelliteImage
 from kriging_exploration.map_coords import MapCoords
 from kriging_exploration.canvas import ViewerCanvas
+
 
 class KrigingVisualiser(object):
 
@@ -12,6 +15,7 @@ class KrigingVisualiser(object):
         self.base_image = self.satellite.base_image.copy()
         self.canvas = ViewerCanvas(self.base_image.shape, self.satellite.centre, self.satellite.res)
 
+        self.centre = self.satellite.centre
         #self.image = np.zeros(self.base_image.shape)
         print "canvas size"
         print self.canvas.image.shape
@@ -23,9 +27,11 @@ class KrigingVisualiser(object):
         self.image = cv2.addWeighted(self.canvas.image, 0.5, self.base_image, 0.9, 0)
 
         
-    def draw_coordinate(self, lat, lon, colour='white', size=6, thickness=2):
+    def draw_coordinate(self, lat, lon, colour='white', size=6, thickness=2, alpha=128):
         a = MapCoords(lat, lon)
-        b = (255,255,255,100)
+        b = [255*x for x in mcolors.hex2color(mcolors.cnames[colour])]
+        b = b[::-1]
+        b.append(alpha)
         self.canvas.draw_coordinate(a,b,size=size, thickness=thickness)
         self.refresh_image()
 
