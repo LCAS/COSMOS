@@ -12,15 +12,6 @@ import rospy
 
 from sensor_msgs.msg import NavSatFix
 from nav_msgs.msg import Odometry
-#import argparse
-#
-#import matplotlib as mpl
-#import matplotlib.cm as cm
-
-#import satellite
-#from kriging_exploration.satellite import SatelliteImage
-#from kriging_exploration.data_grid import DataGrid
-#from krigging_data import KriggingData
 
 
 from kriging_exploration.map_coords import MapCoords
@@ -41,7 +32,8 @@ class SimpleDataVisualiser(KrigingVisualiser):
 
 
         super(SimpleDataVisualiser, self).__init__(initial_gps.latitude, initial_gps.longitude, zoom, size)
-                
+
+        self.preodom= self.centre                
         
         rospy.loginfo("Subscribing to GPS Data")
         rospy.Subscriber("/navsat_fix", NavSatFix, self.gps_callback)
@@ -56,12 +48,13 @@ class SimpleDataVisualiser(KrigingVisualiser):
 
 
     def godom_callback(self, data):
-#        dx = data.pose.pose.position.x - self.initial_godom.pose.pose.position.x
-#        dy = data.pose.pose.position.y - self.initial_godom.pose.pose.position.y
         d = utm.to_latlon(data.pose.pose.position.x, data.pose.pose.position.y, self.centre.zone_number, zone_letter=self.centre.zone_letter)
         
-        #print dx, dy
-        odom_coord = MapCoords(d[0],d[1])#self.centre._get_rel_point(dx, dy)
+        odom_coord = MapCoords(d[0],d[1])
+             
+        print odom_coord - self.preodom
+        
+        self.preodom = odom_coord
         self.draw_coordinate(odom_coord.lat, odom_coord.lon,'yellow',size=2, thickness=1, alpha=255)
 
     def odom_callback(self, data):

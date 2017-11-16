@@ -1,5 +1,5 @@
 import utm
-
+import math
 
 
 class MapCoords(object):
@@ -17,6 +17,12 @@ class MapCoords(object):
         a = utm.to_latlon(self.easting + easting, self.northing + northing, self.zone_number, self.zone_letter)
         return MapCoords(a[0], a[1])
 
+    def __sub__(self, other):
+        dnorth = self.northing - other.northing
+        deast = self.easting - other.easting
+        dist = math.hypot(deast, dnorth)
+        orient = math.atan2(dnorth, deast) * 180/math.pi
+        return dist, orient
 
     def __repr__(self):
         a = dir(self)
