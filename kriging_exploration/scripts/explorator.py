@@ -83,11 +83,12 @@ class Explorator(KrigingVisualiser):
 
 
     def draw_inputs(self, nm):
-#        font = cv2.FONT_HERSHEY_SIMPLEX
+        
         norm = mpl.colors.Normalize(vmin=self.vmin, vmax=self.vmax)
         cmap = cm.jet
         colmap = cm.ScalarMappable(norm=norm, cmap=cmap)
-#
+
+        self.model_canvas[nm].clear_image()
         for i in self.grid.models[nm].orig_data:
             cell = self.grid.cells[i.y][i.x]
 #                #print i.value
@@ -95,12 +96,15 @@ class Explorator(KrigingVisualiser):
             b= (int(a[2]*255), int(a[1]*255), int(a[0]*255), int(a[3]*50))
 #                #print a, b
             self.model_canvas[nm].draw_cell(cell, self.grid.cell_size, b, thickness=-1)
-
+            self.model_canvas[nm].put_text(self.grid.models[nm].name)
 #        self.image = self.satellite.base_image.copy()
 #        cv2.putText(self.image, self.grid.models[nm].name, (int(520), int(20)), font, 0.8, (200, 200, 200), 2)
 #        self.draw_legend(self.vmin, self.vmax)
 
 
+    def krieg_all_mmodels(self):
+        for i in self.grid.models:
+            i.do_krigging()
 
        
     def _change_mode(self, k):
@@ -111,11 +115,24 @@ class Explorator(KrigingVisualiser):
         elif k == ord('n'):
             print len(self.grid.models)
         elif k == ord('i'):
-            self.draw_mode="inputs"
-            self.current_model=0
+            if self.n_models > 0:
+                self.draw_mode="inputs"
+                self.current_model=0
+                self.refresh()
+        elif k == ord('>'):
+            self.current_model+=1
+            if self.current_model >= self.n_models:
+                self.current_model=0
             self.refresh()
-
-
+        elif k == ord('<'):
+            self.current_model-=1
+            if self.current_model < 0:
+                self.current_model=self.n_models-1
+            self.refresh()
+        elif k == ord('t'):
+            self.krieg_all_mmodels()        
+        
+        
     def signal_handler(self, signal, frame):
         cv2.destroyAllWindows()
         print('You pressed Ctrl+C!')

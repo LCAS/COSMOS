@@ -13,6 +13,7 @@ class ViewerCanvas(object):
         self.res = res
         self.centre = centre
         self.image = np.zeros(shape, dtype=np.uint8)
+        self.shape = shape
 
         
     def _coord2pix(self, point):
@@ -31,6 +32,9 @@ class ViewerCanvas(object):
         deast, dnorth = self._coord2pix(point)
         return deast, dnorth
 
+    def clear_image(self):
+        self.image = np.zeros(self.shape, dtype=np.uint8)
+        
     def draw_grid(self, grid, cell_size, colour, thickness=2):
         nx = len(grid)-1
         ny = len(grid[0])-1
@@ -75,4 +79,11 @@ class ViewerCanvas(object):
             cv2.line(self.image, (int(mx0), int(my0)), (int(mx1), int(my1)), colour, thickness=thickness)
         mx0, my0 =self._coord2pix(list_of_coords[0])
         cv2.line(self.image, (int(mx0), int(my0)), (int(mx1), int(my1)), colour, thickness=thickness)
+    
+    def put_text(self,text):
+        font = cv2.FONT_HERSHEY_SIMPLEX
+        cv2.putText(self.image, text, (int(520), int(20)), font, 0.8, (200, 200, 200), 2)
+        
+        
+        
         
