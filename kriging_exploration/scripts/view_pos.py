@@ -17,6 +17,7 @@ from nav_msgs.msg import Odometry
 from kriging_exploration.map_coords import MapCoords
 from kriging_exploration.visualiser import KrigingVisualiser
 
+from kriging_exploration.canvas import ViewerCanvas
 
 class SimpleDataVisualiser(KrigingVisualiser):
 
@@ -33,6 +34,9 @@ class SimpleDataVisualiser(KrigingVisualiser):
 
         super(SimpleDataVisualiser, self).__init__(initial_gps.latitude, initial_gps.longitude, zoom, size)
 
+        self.gps_canvas = ViewerCanvas(self.base_image.shape, self.satellite.centre, self.satellite.res)
+        self.compass_canvas = ViewerCanvas(self.base_image.shape, self.satellite.centre, self.satellite.res)
+        
         self.preodom= self.centre                
         
         rospy.loginfo("Subscribing to GPS Data")
@@ -42,6 +46,7 @@ class SimpleDataVisualiser(KrigingVisualiser):
         rospy.Subscriber("/gps_odom", Odometry, self.godom_callback)        
         
         while(self.running):
+            self.refresh()
             cv2.imshow('image', self.image)
             k = cv2.waitKey(20) & 0xFF
             self._change_mode(k)
@@ -52,26 +57,43 @@ class SimpleDataVisualiser(KrigingVisualiser):
         
         odom_coord = MapCoords(d[0],d[1])
              
-        print odom_coord - self.preodom
+        diff = odom_coord - self.preodom
         
+        self.draw_compass(diff)
         self.preodom = odom_coord
-        self.draw_coordinate(odom_coord.lat, odom_coord.lon,'yellow',size=2, thickness=1, alpha=255)
+        self.gps_canvas.draw_coordinate(odom_coord, 'yellow',size=2, thickness=1, alpha=255)
+        #self.draw_coordinate(odom_coord.lat, odom_coord.lon,'yellow',size=2, thickness=1, alpha=255)
+
+    def draw_compass(self, diff):
+        print diff
+        self.compass_canvas.clear_image()
+        compass_str= str(diff[1])
+        self.compass_canvas.put_text(compass_str)
+        
+    def refresh(self):
+        self.image = cv2.addWeighted(self.compass_canvas.image, 0.5, self.base_image, 1.0, 0)
+        self.image = cv2.addWeighted(self.gps_canvas.image, 0.3, self.image, 1.0, 0)
+
 
     def odom_callback(self, data):
         dx = data.pose.pose.position.x - self.initial_odom.pose.pose.position.x
         dy = data.pose.pose.position.y - self.initial_odom.pose.pose.position.y
         #print dx, dy
         odom_coord = self.centre._get_rel_point(-dy, dx)
-        self.draw_coordinate(odom_coord.lat, odom_coord.lon,'green',size=2, thickness=1, alpha=255)
+        self.gps_canvas.draw_coordinate(odom_coord,'green',size=2, thickness=1, alpha=255)
         
 
     def gps_callback(self, data):
         if not np.isnan(data.latitude):
-            self.draw_coordinate(data.latitude, data.longitude,'red',size=2, thickness=1, alpha=255)
+            gps_coord = MapCoords(data.latitude,data.longitude)
+            self.gps_canvas.draw_coordinate(gps_coord,'red',size=2, thickness=1, alpha=255)
+#            self.draw_coordinate(data.latitude, data.longitude,'red',size=2, thickness=1, alpha=255)
 
     def mti_callback(self, data):
         if not np.isnan(data.latitude):
-            self.draw_coordinate(data.latitude, data.longitude,'white',size=2, thickness=1, alpha=255)
+            gps_coord = MapCoords(data.latitude,data.longitude)
+            self.gps_canvas.draw_coordinate(gps_coord,'white',size=2, thickness=1, alpha=255)
+#            self.draw_coordinate(data.latitude, data.longitude,'white',size=2, thickness=1, alpha=255)
 
     def _change_mode(self, k):
         if k == 27:
@@ -86,11 +108,6 @@ class SimpleDataVisualiser(KrigingVisualiser):
         sys.exit(0)
 
 
-if __name__ == '__main__':
-#    parser = argparse.ArgumentParser()
-#    parser.add_argument("--cell_size", type=int, default=10,
-#                        help="cell size in meters")
-#    args = parser.parse_args()
-    
+if __name__ == '__main__':   
     rospy.init_node('kriging_exploration')
     SimpleDataVisualiser(17, 640, 10)

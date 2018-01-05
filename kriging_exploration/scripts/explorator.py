@@ -46,6 +46,8 @@ class Explorator(KrigingVisualiser):
         self.grid_canvas.draw_grid(self.grid.cells, cell_size, (128,128,128,2), thickness=1)
         
         self.model_canvas=[]
+        self.kriging_canvas=[]
+        self.sigma_canvas=[]
         self.model_canvas_names=[]
 
         rospy.loginfo("Subscribing to Krig Info")
@@ -65,6 +67,9 @@ class Explorator(KrigingVisualiser):
         self.image = cv2.addWeighted(self.limits_canvas.image, 0.5, self.image, 1.0, 0)
         if self.draw_mode == "inputs" and self.current_model>=0 :
             self.image = cv2.addWeighted(self.model_canvas[self.current_model].image, 0.75, self.image, 1.0, 0)
+        if self.draw_mode == "kriging":# and self.current_model>=0 :
+            self.image = cv2.addWeighted(self.kriging_canvas[self.current_model].image, 0.75, self.image, 1.0, 0)
+
 
     def data_callback(self, msg):
         point_coord = kriging_exploration.map_coords.coord_from_satnav_fix(msg.coordinates)
@@ -79,6 +84,8 @@ class Explorator(KrigingVisualiser):
                 print i.name
                 self.model_canvas_names.append(i.name)
                 self.model_canvas.append(ViewerCanvas(self.base_image.shape, self.satellite.centre, self.satellite.res))
+                self.kriging_canvas.append(ViewerCanvas(self.base_image.shape, self.satellite.centre, self.satellite.res))
+                self.sigma_canvas.append(ViewerCanvas(self.base_image.shape, self.satellite.centre, self.satellite.res))
             self.draw_inputs(self.model_canvas_names.index(i.name))
 
 
@@ -91,10 +98,8 @@ class Explorator(KrigingVisualiser):
         self.model_canvas[nm].clear_image()
         for i in self.grid.models[nm].orig_data:
             cell = self.grid.cells[i.y][i.x]
-#                #print i.value
             a= colmap.to_rgba(int(i.value))                
             b= (int(a[2]*255), int(a[1]*255), int(a[0]*255), int(a[3]*50))
-#                #print a, b
             self.model_canvas[nm].draw_cell(cell, self.grid.cell_size, b, thickness=-1)
             self.model_canvas[nm].put_text(self.grid.models[nm].name)
 #        self.image = self.satellite.base_image.copy()
@@ -102,10 +107,47 @@ class Explorator(KrigingVisualiser):
 #        self.draw_legend(self.vmin, self.vmax)
 
 
+
+    def draw_krigged(self, nm):
+        print "drawing kriging" + str(nm)
+        norm = mpl.colors.Normalize(vmin=self.vmin, vmax=self.vmax)
+        cmap = cm.jet
+        colmap = cm.ScalarMappable(norm=norm, cmap=cmap)
+
+        self.kriging_canvas[nm].clear_image()
+        for i in range(self.grid.models[nm].shape[0]):
+            for j in range(self.grid.models[nm].shape[1]):
+                cell = self.grid.cells[i][j]
+                a= colmap.to_rgba(int(self.grid.models[nm].output[i][j]))
+                b= (int(a[2]*255), int(a[1]*255), int(a[0]*255), int(a[3]*50))    
+                self.kriging_canvas[nm].draw_cell(cell, self.grid.cell_size, b, thickness=-1)
+        
+        self.kriging_canvas[nm].put_text(self.grid.models[nm].name)
+
+
+
+    def draw_deviation(self, nm):
+
+        norm = mpl.colors.Normalize(vmin=0, vmax=100)
+        cmap = cm.jet
+        colmap = cm.ScalarMappable(norm=norm, cmap=cmap)
+
+        self.sigma_canvas[nm].clear_image()
+        for i in range(self.grid.models[nm].shape[0]):
+            for j in range(self.grid.models[nm].shape[1]):
+                cell = self.grid.cells[i][j]
+                a= colmap.to_rgba(int(self.grid.models[nm].sigmapercent[i][j]*100))
+                b= (int(a[2]*255), int(a[1]*255), int(a[0]*255), int(a[3]*50))
+                self.sigma_canvas[nm].draw_cell(cell, self.grid.cell_size, b, thickness=-1)
+
+
+        self.sigma_canvas[nm].put_text(self.grid.models[nm].name)
+
+
     def krieg_all_mmodels(self):
         for i in self.grid.models:
             i.do_krigging()
-
+            self.draw_krigged(self.model_canvas_names.index(i.name))
        
     def _change_mode(self, k):
         if k == 27:
@@ -130,7 +172,12 @@ class Explorator(KrigingVisualiser):
                 self.current_model=self.n_models-1
             self.refresh()
         elif k == ord('t'):
-            self.krieg_all_mmodels()        
+            self.krieg_all_mmodels()
+            if self.n_models > 0:
+                self.draw_mode="kriging"
+                self.current_model=0
+                self.refresh()
+            
         
         
     def signal_handler(self, signal, frame):

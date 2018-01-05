@@ -29,10 +29,10 @@ class KrigingVisualiser(object):
         
     def draw_coordinate(self, lat, lon, colour='white', size=6, thickness=2, alpha=128):
         a = MapCoords(lat, lon)
-        b = [255*x for x in mcolors.hex2color(mcolors.cnames[colour])]
-        b = b[::-1]
-        b.append(alpha)
-        self.canvas.draw_coordinate(a,b,size=size, thickness=thickness)
+#        b = [255*x for x in mcolors.hex2color(mcolors.cnames[colour])]
+#        b = b[::-1]
+#        b.append(alpha)
+        self.canvas.draw_coordinate(a,colour,size=size, thickness=thickness)
         self.refresh_image()
 
 

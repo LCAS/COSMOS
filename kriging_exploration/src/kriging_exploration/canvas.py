@@ -2,6 +2,7 @@
 #import math
 import numpy as np
 import cv2
+from matplotlib import colors as mcolors
 
 from map_coords import MapCoords
 
@@ -34,6 +35,15 @@ class ViewerCanvas(object):
 
     def clear_image(self):
         self.image = np.zeros(self.shape, dtype=np.uint8)
+
+
+    def draw_coordinate(self, coord, colour, size=6, thickness=2, alpha=128):
+        mx, my =self._coord2pix(coord)        
+        b = [255*x for x in mcolors.hex2color(mcolors.cnames[colour])]
+        b = b[::-1]
+        b.append(alpha)
+        cv2.circle(self.image, (int(mx), int(my)), size, b, thickness)
+
         
     def draw_grid(self, grid, cell_size, colour, thickness=2):
         nx = len(grid)-1
@@ -62,10 +72,6 @@ class ViewerCanvas(object):
         mx1, my1 =self._coord2pix(cell._get_rel_point(cell_size/2,cell_size/2))
         cv2.rectangle(self.image, (int(mx0), int(my0)), (int(mx1), int(my1)), colour, thickness=thickness)
         
-
-    def draw_coordinate(self, coord, colour, size=6, thickness=2):
-        mx, my =self._coord2pix(coord)
-        cv2.circle(self.image, (int(mx), int(my)), size, colour, thickness)
 
     def draw_list_of_coords(self, list_of_coords, colour, size=6, thickness=2):
         for i in list_of_coords:
