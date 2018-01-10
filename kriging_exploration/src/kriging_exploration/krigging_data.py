@@ -66,12 +66,18 @@ class KriggingData(object):
 
         self.deviation=np.sqrt(self.variance)
         self.sigmapercent =  self.deviation/self.output
+
+        self.min_var = np.min(self.variance)
+        self.max_var = np.max(self.variance)
+
         
         #print self.variance
         print self.sigmapercent
         self.min_var = np.min(self.variance)
         self.max_var = np.max(self.variance)
         print self.min_var, self.max_var
+
+
 
 #        self.variance[self.variance < 0] = 0.0
 

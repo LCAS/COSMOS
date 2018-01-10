@@ -24,6 +24,9 @@ from kriging_exploration.map_coords import MapCoords
 from kriging_exploration.visualiser import KrigingVisualiser
 from kriging_exploration.canvas import ViewerCanvas
 
+
+from sensor_msgs.msg import NavSatFix
+
 class Explorator(KrigingVisualiser):
 
 
@@ -44,6 +47,7 @@ class Explorator(KrigingVisualiser):
         
         self.grid_canvas = ViewerCanvas(self.base_image.shape, self.satellite.centre, self.satellite.res)
         self.grid_canvas.draw_grid(self.grid.cells, cell_size, (128,128,128,2), thickness=1)
+        self.gps_canvas = ViewerCanvas(self.base_image.shape, self.satellite.centre, self.satellite.res)
         
         self.model_canvas=[]
         self.kriging_canvas=[]
@@ -52,7 +56,7 @@ class Explorator(KrigingVisualiser):
 
         rospy.loginfo("Subscribing to Krig Info")
         rospy.Subscriber("/kriging_data", KrigInfo, self.data_callback)
-
+        rospy.Subscriber("/fix", NavSatFix, self.gps_callback)
 
         self.refresh()
 
@@ -69,7 +73,13 @@ class Explorator(KrigingVisualiser):
             self.image = cv2.addWeighted(self.model_canvas[self.current_model].image, 0.75, self.image, 1.0, 0)
         if self.draw_mode == "kriging":# and self.current_model>=0 :
             self.image = cv2.addWeighted(self.kriging_canvas[self.current_model].image, 0.75, self.image, 1.0, 0)
+        self.image = cv2.addWeighted(self.gps_canvas.image, 0.5, self.image, 1.0, 0)
 
+    def gps_callback(self, data):
+        if not np.isnan(data.latitude):
+            gps_coord = MapCoords(data.latitude,data.longitude)
+            self.gps_canvas.draw_coordinate(gps_coord,'red',size=2, thickness=1, alpha=255)
+            #self.refresh()
 
     def data_callback(self, msg):
         point_coord = kriging_exploration.map_coords.coord_from_satnav_fix(msg.coordinates)
@@ -161,6 +171,11 @@ class Explorator(KrigingVisualiser):
                 self.draw_mode="inputs"
                 self.current_model=0
                 self.refresh()
+        elif k == ord('v'):
+            if self.n_models > 0:
+                self.draw_mode="variance"
+                self.current_model=0
+                self.refresh()
         elif k == ord('>'):
             self.current_model+=1
             if self.current_model >= self.n_models:
@@ -196,6 +211,6 @@ if __name__ == '__main__':
     args = parser.parse_args()
     
     rospy.init_node('kriging_exploration')
-    Explorator(53.261685, -0.525158, 17, 640, args.cell_size)
+    Explorator(53.261685, -0.527158, 16, 640, args.cell_size)
 
     
