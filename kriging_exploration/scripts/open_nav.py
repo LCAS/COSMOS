@@ -20,10 +20,10 @@ class OpenNav(object):
     def callback(self, data):
         cmd = Twist()
         if data.buttons[4]:
-            velx=data.axes[1]*0.5
-            vela=data.axes[0]*0.1
+            velx=data.axes[1]*1.0
+            vela=data.axes[0]*1.0
             cmd.linear.x=velx
-            cmd.angular.x=vela
+            cmd.angular.z=vela
             self.pub.publish(cmd)
             print cmd
         else:

@@ -58,6 +58,7 @@ class Explorator(KrigingVisualiser):
         rospy.Subscriber("/kriging_data", KrigInfo, self.data_callback)
         rospy.Subscriber("/fix", NavSatFix, self.gps_callback)
 
+        tim1 = rospy.Timer(rospy.Duration(0.5), self.timer_callback)
         self.refresh()
 
         while(self.running):
@@ -65,6 +66,14 @@ class Explorator(KrigingVisualiser):
             k = cv2.waitKey(20) & 0xFF
             self._change_mode(k)
 
+        tim1.shutdown()
+        cv2.destroyAllWindows()       
+        sys.exit(0)
+
+
+    def timer_callback(self, event):
+#        print 'Timer called at ' + str(event.current_real)
+        self.refresh()
 
     def refresh(self):
         self.image = cv2.addWeighted(self.grid_canvas.image, 0.5, self.base_image, 1.0, 0)
@@ -73,12 +82,12 @@ class Explorator(KrigingVisualiser):
             self.image = cv2.addWeighted(self.model_canvas[self.current_model].image, 0.75, self.image, 1.0, 0)
         if self.draw_mode == "kriging":# and self.current_model>=0 :
             self.image = cv2.addWeighted(self.kriging_canvas[self.current_model].image, 0.75, self.image, 1.0, 0)
-        self.image = cv2.addWeighted(self.gps_canvas.image, 0.5, self.image, 1.0, 0)
+        self.image = cv2.addWeighted(self.gps_canvas.image, 0.25, self.image, 1.0, 0)
 
     def gps_callback(self, data):
         if not np.isnan(data.latitude):
             gps_coord = MapCoords(data.latitude,data.longitude)
-            self.gps_canvas.draw_coordinate(gps_coord,'red',size=2, thickness=1, alpha=255)
+            self.gps_canvas.draw_coordinate(gps_coord,'white',size=2, thickness=1, alpha=125)
             #self.refresh()
 
     def data_callback(self, msg):
@@ -192,13 +201,15 @@ class Explorator(KrigingVisualiser):
                 self.draw_mode="kriging"
                 self.current_model=0
                 self.refresh()
-            
+        elif k == ord('w'):
+            #print self.grid
+            self.grid_canvas.draw_waypoints(self.grid.cells, (128,128,128,2), thickness=1)
+            #print self.grid.cells[0][0]
         
         
     def signal_handler(self, signal, frame):
-        cv2.destroyAllWindows()
+        self.running = False
         print('You pressed Ctrl+C!')
-        sys.exit(0)
 
 
 
@@ -211,6 +222,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
     
     rospy.init_node('kriging_exploration')
-    Explorator(53.261685, -0.527158, 16, 640, args.cell_size)
+    #Explorator(53.261685, -0.527158, 16, 640, args.cell_size)
+    Explorator(53.261685, -0.525158, 17, 640, args.cell_size)
 
     
