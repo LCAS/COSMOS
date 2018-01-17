@@ -11,10 +11,12 @@ class DataGrid(object):
     def __init__(self, limits_file, cell_size):
         self.limits=[]
         self.corners=[]
-        self.cells=[]
+        self.cells=[]       #coordinates of the center of each cell
 
         self._load_limits(limits_file)
         self.create_grid(cell_size)
+
+
 
         self.models=[]
 

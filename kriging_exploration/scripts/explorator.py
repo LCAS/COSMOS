@@ -23,7 +23,7 @@ from kriging_exploration.data_grid import DataGrid
 from kriging_exploration.map_coords import MapCoords
 from kriging_exploration.visualiser import KrigingVisualiser
 from kriging_exploration.canvas import ViewerCanvas
-
+from kriging_exploration.topological_map import TopoMap
 
 from sensor_msgs.msg import NavSatFix
 
@@ -37,9 +37,14 @@ class Explorator(KrigingVisualiser):
         print "Creating visualiser object"
         super(Explorator, self).__init__(lat_deg, lon_deg, zoom, size)
 
+        cv2.namedWindow('explorator')
+        cv2.setMouseCallback('explorator', self.click_callback)
+
         self.current_model=-1
         self.draw_mode = 'none'
         self.grid = DataGrid('limits.coords', cell_size)
+        self.topo_map= TopoMap(self.grid)
+        
         
         self.limits_canvas = ViewerCanvas(self.base_image.shape, self.satellite.centre, self.satellite.res)
         self.limits_canvas.draw_polygon(self.grid.limits, (0,0,255,128), thickness=1)
@@ -62,7 +67,7 @@ class Explorator(KrigingVisualiser):
         self.refresh()
 
         while(self.running):
-            cv2.imshow('image', self.image)
+            cv2.imshow('explorator', self.image)
             k = cv2.waitKey(20) & 0xFF
             self._change_mode(k)
 
@@ -125,7 +130,16 @@ class Explorator(KrigingVisualiser):
 #        cv2.putText(self.image, self.grid.models[nm].name, (int(520), int(20)), font, 0.8, (200, 200, 200), 2)
 #        self.draw_legend(self.vmin, self.vmax)
 
+    def click_callback(self, event, x, y, flags, param):
+        
+        if event == cv2.EVENT_LBUTTONDOWN:
+            click_coord = self.satellite._pix2coord(x,y)
+            cx, cy = self.grid.get_cell_inds_from_coords(click_coord)
 
+            if cx <0 or cy<0:
+                print "click outside the grid"
+            else:
+                print cx, cy
 
     def draw_krigged(self, nm):
         print "drawing kriging" + str(nm)
@@ -203,7 +217,7 @@ class Explorator(KrigingVisualiser):
                 self.refresh()
         elif k == ord('w'):
             #print self.grid
-            self.grid_canvas.draw_waypoints(self.grid.cells, (128,128,128,2), thickness=1)
+            self.grid_canvas.draw_waypoints(self.topo_map, (128,128,128,2), thickness=1)
             #print self.grid.cells[0][0]
         
         

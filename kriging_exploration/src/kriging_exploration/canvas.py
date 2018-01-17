@@ -45,29 +45,15 @@ class ViewerCanvas(object):
         cv2.circle(self.image, (int(mx), int(my)), size, b, thickness)
 
 
-    def draw_waypoints(self, grid, colour, thickness=2):
-        for i in range(0, len(grid)):
-            for j in range(0, len(grid[0])):
-                mx0, my0 = self._coord2pix(grid[i][j])
-                cv2.circle(self.image, (int(mx0), int(my0)), 2, colour, thickness=thickness)
-        
-#        for i in range(0, len(grid[0])):
-#            mx0, my0 =self._coord2pix(grid[0][i]._get_rel_point(-cell_size/2,-cell_size/2))
-#            mx1, my1 =self._coord2pix(grid[nx][i]._get_rel_point(-cell_size/2,cell_size/2))
-#            cv2.line(self.image, (int(mx0), int(my0)), (int(mx1), int(my1)), colour, thickness=thickness)
-#
-#        mx0, my0 =self._coord2pix(grid[0][ny]._get_rel_point(cell_size/2,-cell_size/2))
-#        mx1, my1 =self._coord2pix(grid[nx][ny]._get_rel_point(cell_size/2,cell_size/2))
-#        cv2.line(self.image, (int(mx0), int(my0)), (int(mx1), int(my1)), colour, thickness=thickness)
-#
+    def draw_waypoints(self, topomap, colour, thickness=2):
+        for i in topomap.waypoints:
+            mx0, my0 = self._coord2pix(i.coord)
+            cv2.circle(self.image, (int(mx0), int(my0)), 2, colour, thickness=thickness)
 #        for i in range(0, len(grid)):
-#            mx0, my0 =self._coord2pix(grid[i][0]._get_rel_point(-cell_size/2,-cell_size/2))
-#            mx1, my1 =self._coord2pix(grid[i][ny]._get_rel_point(cell_size/2,-cell_size/2))
-#            cv2.line(self.image, (int(mx0), int(my0)), (int(mx1), int(my1)), colour, thickness=thickness)
-#
-#        mx0, my0 =self._coord2pix(grid[nx][0]._get_rel_point(-cell_size/2,cell_size/2))
-#        mx1, my1 =self._coord2pix(grid[nx][ny]._get_rel_point(cell_size/2,cell_size/2))
-#        cv2.line(self.image, (int(mx0), int(my0)), (int(mx1), int(my1)), colour, thickness=thickness)
+#            for j in range(0, len(grid[0])):
+#                mx0, my0 = self._coord2pix(grid[i][j])
+#                cv2.circle(self.image, (int(mx0), int(my0)), 2, colour, thickness=thickness)
+        
         
     def draw_grid(self, grid, cell_size, colour, thickness=2):
         nx = len(grid)-1
