@@ -31,7 +31,8 @@ def coord_in_poly(point, limits):
 
 
 class TopoNode(object):
-    def __init__(self, coord, ind):
+    def __init__(self, name, coord, ind):
+        self.name = name
         self.coord = coord  #Node coordinates
         self.ind = ind      #Grid Indexes
 
@@ -43,9 +44,13 @@ class TopoMap(object):
         self.calculate_waypoints(grid)
         
     def calculate_waypoints(self, grid):
+        ind = 0
         for i in range(0, len(grid.cells)):
             for j in range(0, len(grid.cells[0])):
                 if coord_in_poly(grid.cells[i][j], grid.limits):
-                    d = TopoNode(grid.cells[i][j], (i, j))
+                    name = 'Waypoint%003d' %ind
+                    d = TopoNode(name, grid.cells[i][j], (i, j))
                     self.waypoints.append(d)
-
+                    ind+=1
+                    print name
+        #print len(self.waypoints)
