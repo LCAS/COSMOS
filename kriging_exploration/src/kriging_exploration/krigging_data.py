@@ -70,12 +70,14 @@ class KriggingData(object):
         self.min_var = np.min(self.variance)
         self.max_var = np.max(self.variance)
 
+        self.min_val = np.min(self.output)
+        self.max_val = np.max(self.output)
         
         #print self.variance
         print self.sigmapercent
         self.min_var = np.min(self.variance)
         self.max_var = np.max(self.variance)
-        print self.min_var, self.max_var
+        #print self.min_var, self.max_var
 
 
 
@@ -90,7 +92,9 @@ class KriggingData(object):
   
         
         #self.variance = np.place(self.variance, self.variance>0, [0])
-        print "Output: ", z.shape        
+        #print "Output: ", z.shape        
         
         self.min_var = np.min(self.variance)
         self.max_var = np.max(self.variance)
+
+        print self.min_val, np.max(self.output)

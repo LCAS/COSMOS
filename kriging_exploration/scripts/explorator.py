@@ -6,7 +6,7 @@ import sys
 
 import signal
 import numpy as np
-import utm
+#import utm
 
 
 import matplotlib as mpl
@@ -24,6 +24,7 @@ from kriging_exploration.map_coords import MapCoords
 from kriging_exploration.visualiser import KrigingVisualiser
 from kriging_exploration.canvas import ViewerCanvas
 from kriging_exploration.topological_map import TopoMap
+from kriging_exploration.exploration import ExplorationPlan
 
 from sensor_msgs.msg import NavSatFix
 
@@ -31,6 +32,9 @@ class Explorator(KrigingVisualiser):
 
 
     def __init__(self, lat_deg, lon_deg, zoom, size, cell_size):
+        self.targets = []
+
+
         self.running = True
         signal.signal(signal.SIGINT, self.signal_handler)
 
@@ -44,26 +48,34 @@ class Explorator(KrigingVisualiser):
         self.draw_mode = 'none'
         self.grid = DataGrid('limits.coords', cell_size)
         self.topo_map= TopoMap(self.grid)
+        self.explo_plan = ExplorationPlan(self.topo_map, 'WayPoint498')
         
+        
+        print "NUMBER OF TARGETS:"
+        print len(self.explo_plan.targets)        
         
         self.limits_canvas = ViewerCanvas(self.base_image.shape, self.satellite.centre, self.satellite.res)
-        self.limits_canvas.draw_polygon(self.grid.limits, (0,0,255,128), thickness=1)
-        
-        
         self.grid_canvas = ViewerCanvas(self.base_image.shape, self.satellite.centre, self.satellite.res)
-        self.grid_canvas.draw_grid(self.grid.cells, cell_size, (128,128,128,2), thickness=1)
+        self.exploration_canvas = ViewerCanvas(self.base_image.shape, self.satellite.centre, self.satellite.res)
         self.gps_canvas = ViewerCanvas(self.base_image.shape, self.satellite.centre, self.satellite.res)
+
+        self.limits_canvas.draw_polygon(self.grid.limits, (0,0,255,128), thickness=1)
+        self.grid_canvas.draw_grid(self.grid.cells, cell_size, (128,128,128,2), thickness=1)
+        
+        self.redraw()
         
         self.model_canvas=[]
         self.kriging_canvas=[]
+        self.klegend_canvas=[]
         self.sigma_canvas=[]
         self.model_canvas_names=[]
+        
 
         rospy.loginfo("Subscribing to Krig Info")
         rospy.Subscriber("/kriging_data", KrigInfo, self.data_callback)
         rospy.Subscriber("/fix", NavSatFix, self.gps_callback)
 
-        tim1 = rospy.Timer(rospy.Duration(0.5), self.timer_callback)
+        tim1 = rospy.Timer(rospy.Duration(0.2), self.timer_callback)
         self.refresh()
 
         while(self.running):
@@ -80,14 +92,21 @@ class Explorator(KrigingVisualiser):
 #        print 'Timer called at ' + str(event.current_real)
         self.refresh()
 
-    def refresh(self):
+    def redraw(self):
         self.image = cv2.addWeighted(self.grid_canvas.image, 0.5, self.base_image, 1.0, 0)
         self.image = cv2.addWeighted(self.limits_canvas.image, 0.5, self.image, 1.0, 0)
+        self.image = cv2.addWeighted(self.exploration_canvas.image, 0.75, self.image, 1.0, 0)
         if self.draw_mode == "inputs" and self.current_model>=0 :
             self.image = cv2.addWeighted(self.model_canvas[self.current_model].image, 0.75, self.image, 1.0, 0)
         if self.draw_mode == "kriging":# and self.current_model>=0 :
             self.image = cv2.addWeighted(self.kriging_canvas[self.current_model].image, 0.75, self.image, 1.0, 0)
+            self.image = cv2.addWeighted(self.klegend_canvas[self.current_model].image, 1.0, self.image, 1.0, 0)
+
+        
+
+    def refresh(self):
         self.image = cv2.addWeighted(self.gps_canvas.image, 0.25, self.image, 1.0, 0)
+
 
     def gps_callback(self, data):
         if not np.isnan(data.latitude):
@@ -109,6 +128,7 @@ class Explorator(KrigingVisualiser):
                 self.model_canvas_names.append(i.name)
                 self.model_canvas.append(ViewerCanvas(self.base_image.shape, self.satellite.centre, self.satellite.res))
                 self.kriging_canvas.append(ViewerCanvas(self.base_image.shape, self.satellite.centre, self.satellite.res))
+                self.klegend_canvas.append(ViewerCanvas(self.base_image.shape, self.satellite.centre, self.satellite.res))
                 self.sigma_canvas.append(ViewerCanvas(self.base_image.shape, self.satellite.centre, self.satellite.res))
             self.draw_inputs(self.model_canvas_names.index(i.name))
 
@@ -140,14 +160,21 @@ class Explorator(KrigingVisualiser):
                 print "click outside the grid"
             else:
                 print cx, cy
+                
+            for i in self.topo_map.waypoints:
+                if (cy,cx) == i.ind:
+                    print i.name
+                
 
     def draw_krigged(self, nm):
         print "drawing kriging" + str(nm)
-        norm = mpl.colors.Normalize(vmin=self.vmin, vmax=self.vmax)
+        norm = mpl.colors.Normalize(vmin=self.grid.models[nm].min_val, vmax=self.grid.models[nm].max_val)
         cmap = cm.jet
         colmap = cm.ScalarMappable(norm=norm, cmap=cmap)
 
+
         self.kriging_canvas[nm].clear_image()
+        self.klegend_canvas[nm].clear_image()
         for i in range(self.grid.models[nm].shape[0]):
             for j in range(self.grid.models[nm].shape[1]):
                 cell = self.grid.cells[i][j]
@@ -155,8 +182,10 @@ class Explorator(KrigingVisualiser):
                 b= (int(a[2]*255), int(a[1]*255), int(a[0]*255), int(a[3]*50))    
                 self.kriging_canvas[nm].draw_cell(cell, self.grid.cell_size, b, thickness=-1)
         
-        self.kriging_canvas[nm].put_text(self.grid.models[nm].name)
-
+        self.klegend_canvas[nm].put_text(self.grid.models[nm].name)
+        self.klegend_canvas[nm].draw_legend(self.grid.models[nm].min_val, self.grid.models[nm].max_val, colmap)
+        
+        self.redraw()
 
 
     def draw_deviation(self, nm):
@@ -175,12 +204,14 @@ class Explorator(KrigingVisualiser):
 
 
         self.sigma_canvas[nm].put_text(self.grid.models[nm].name)
+        self.redraw()
 
 
     def krieg_all_mmodels(self):
         for i in self.grid.models:
             i.do_krigging()
             self.draw_krigged(self.model_canvas_names.index(i.name))
+
        
     def _change_mode(self, k):
         if k == 27:
@@ -193,34 +224,40 @@ class Explorator(KrigingVisualiser):
             if self.n_models > 0:
                 self.draw_mode="inputs"
                 self.current_model=0
-                self.refresh()
+                self.redraw()
         elif k == ord('v'):
             if self.n_models > 0:
                 self.draw_mode="variance"
                 self.current_model=0
-                self.refresh()
+                self.redraw()
         elif k == ord('>'):
             self.current_model+=1
             if self.current_model >= self.n_models:
                 self.current_model=0
-            self.refresh()
+            self.redraw()
         elif k == ord('<'):
             self.current_model-=1
             if self.current_model < 0:
                 self.current_model=self.n_models-1
-            self.refresh()
+            self.redraw()
         elif k == ord('t'):
             self.krieg_all_mmodels()
             if self.n_models > 0:
                 self.draw_mode="kriging"
                 self.current_model=0
-                self.refresh()
+                self.redraw()
         elif k == ord('w'):
-            #print self.grid
-            self.grid_canvas.draw_waypoints(self.topo_map, (128,128,128,2), thickness=1)
-            #print self.grid.cells[0][0]
+            self.grid_canvas.draw_waypoints(self.topo_map.waypoints, (128,128,128,2), thickness=1)
+            self.redraw()
+        elif k == ord('e'):
+            self.exploration_canvas.draw_waypoints(self.explo_plan.targets, (255,128,128,2), thickness=2)
+            self.exploration_canvas.draw_plan(self.explo_plan.route, (0,128,128,2), thickness=1)
+            self.redraw()            
+    
+
         
-        
+    
+    
     def signal_handler(self, signal, frame):
         self.running = False
         print('You pressed Ctrl+C!')
