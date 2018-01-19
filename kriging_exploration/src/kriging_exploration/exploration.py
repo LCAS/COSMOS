@@ -6,6 +6,27 @@ import numpy as np
 
 from map_coords import MapCoords
 
+
+
+#def line_intersection(line1, line2):
+#    xdiff = (line1[0][0] - line1[1][0], line2[0][0] - line2[1][0])
+#    ydiff = (line1[0][1] - line1[1][1], line2[0][1] - line2[1][1]) #Typo was here
+#
+#    def det(a, b):
+#        return a[0] * b[1] - a[1] * b[0]
+#
+#    div = det(xdiff, ydiff)
+#    if div == 0:
+#       raise Exception('lines do not intersect')
+#
+#    d = (det(*line1), det(*line2))
+#    x = det(d, xdiff) / div
+#    y = det(d, ydiff) / div
+#    return x, y
+#
+#print line_intersection((A, B), (C, D))
+
+
 class ExplorationPlan(object):
     def __init__(self, topo_map, initial_waypoint):
         self.targets=[]
@@ -46,20 +67,28 @@ class ExplorationPlan(object):
                     break
         
     def _get_plan(self, initial_waypoint):
-        self.route.append(self._get_wp(initial_waypoint))
-        self.route_nodes.append(initial_waypoint)
+#        self.route.append(self._get_wp(initial_waypoint))
+#        self.route_nodes.append(initial_waypoint)
         
-        self._create_greedy_plan()
-        #self._create_random_plan(initial_waypoint)
+        groute, gdist = self._create_greedy_plan(initial_waypoint)
+        rroute, rdist = self._create_random_plan(initial_waypoint)
+        
+        print "Greedy: " + str(gdist) + " Random: " + str(rdist)
+        
+        if gdist < rdist:
+            self.route = groute
+        else:
+            self.route = rroute
         
     
-    def _create_greedy_plan(self):
-        #got_plan = False
+    def _create_greedy_plan(self, initial_waypoint):
+        route=[]
+        route.append(self._get_wp(initial_waypoint))
+        
         local_targs = self.targets[:]
         
         while len(local_targs) > 0:
-            print "current node: " + self.route_nodes[-1]
-            cn = self.route[-1]
+            cn = route[-1]
             min_dist =10000.0
             min_ind = -1
             for i in range(0, len(local_targs)):
@@ -67,20 +96,35 @@ class ExplorationPlan(object):
                 if dist <= min_dist:
                    min_dist = dist
                    min_ind = i
-            self.route.append(local_targs[min_ind])
-            self.route_nodes.append(local_targs[min_ind].name)
+            route.append(local_targs[min_ind])
+            #self.route_nodes.append(local_targs[min_ind].name)
             local_targs.pop(min_ind)
         
-        print self.route_nodes
-        print [x.name for x in self.route]
-        print len(self.route_nodes)
+        print [x.name for x in route]
+        
+        dist = 0
+        for i in range(1, len(route)):
+            d = route[i].coord - route[i-1].coord
+            dist+=d[0]
+        
+        #print "TOTAL DIST: " + str(dist)
+        return route, dist
             
             
         
     
     def _create_random_plan(self, initial_waypoint):
+        route=[]
+        route.append(self._get_wp(initial_waypoint))
+        
         for i in self.targets:
             if i.name != initial_waypoint:
-                self.route.append(i)
-                self.route_nodes.append(i.name)
+                route.append(i)
         
+        dist = 0
+        for i in range(1, len(route)):
+            d = route[i].coord - route[i-1].coord
+            dist+=d[0]
+        
+        #print "TOTAL DIST: " + str(dist)
+        return route, dist
