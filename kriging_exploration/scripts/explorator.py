@@ -152,7 +152,7 @@ class Explorator(KrigingVisualiser):
 
     def click_callback(self, event, x, y, flags, param):
         
-        if event == cv2.EVENT_LBUTTONDOWN:
+        if event == cv2.EVENT_RBUTTONDOWN:
             click_coord = self.satellite._pix2coord(x,y)
             cx, cy = self.grid.get_cell_inds_from_coords(click_coord)
 
@@ -163,7 +163,21 @@ class Explorator(KrigingVisualiser):
                 
             for i in self.topo_map.waypoints:
                 if (cy,cx) == i.ind:
-                    print i.name
+                    print i.name, i.coord
+
+
+        if event == cv2.EVENT_LBUTTONDOWN:
+            click_coord = self.satellite._pix2coord(x,y)
+            cx, cy = self.grid.get_cell_inds_from_coords(click_coord)
+
+            if cx <0 or cy<0:
+                print "click outside the grid"
+            else:
+                print cx, cy
+                               
+#            for i in self.topo_map.waypoints:
+#                if (cy,cx) == i.ind:
+#                    print i.name, i.coord
                 
 
     def draw_krigged(self, nm):

@@ -51,6 +51,6 @@ class SImPos(object):
 
 if __name__ == '__main__':
     rospy.init_node('sim_pos')   
-    SImPos(53.261685, -0.525158, 0.0)
+    SImPos(53.262347, -0.527716, 0.0)
 
 

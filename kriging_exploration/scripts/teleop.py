@@ -33,7 +33,7 @@ class OpenNav(object):
 
 
 if __name__ == '__main__':
-    rospy.init_node('open_nav')   
+    rospy.init_node('teleop')   
     OpenNav()
 
 
