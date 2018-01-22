@@ -191,8 +191,11 @@ class Explorator(KrigingVisualiser):
             for i in self.topo_map.waypoints:
                 if (cy,cx) == i.ind:
                     goal = open_nav.msg.OpenNavActionGoal()
-                    goal.goal.goal.latitude=i.coord.lat
-                    goal.goal.goal.longitude=i.coord.lon
+
+                    #goal.goal.goal.header.
+                    goal.goal.coords.header.stamp=rospy.Time.now()
+                    goal.goal.coords.latitude=i.coord.lat
+                    goal.goal.coords.longitude=i.coord.lon
                     self.client.send_goal(goal)
                     self.client.wait_for_result()
                     # Prints out the result of executing the action
