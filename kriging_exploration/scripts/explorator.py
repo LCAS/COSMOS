@@ -16,9 +16,13 @@ import rospy
 
 import argparse
 
-from cosmos_msgs.msg import KrigInfo
+import actionlib
 
+
+from cosmos_msgs.msg import KrigInfo
 import kriging_exploration.map_coords
+
+import open_nav.msg
 from kriging_exploration.data_grid import DataGrid
 from kriging_exploration.map_coords import MapCoords
 from kriging_exploration.visualiser import KrigingVisualiser
@@ -74,6 +78,15 @@ class Explorator(KrigingVisualiser):
         rospy.loginfo("Subscribing to Krig Info")
         rospy.Subscriber("/kriging_data", KrigInfo, self.data_callback)
         rospy.Subscriber("/fix", NavSatFix, self.gps_callback)
+
+
+        rospy.loginfo(" ... Connecting to Open_nav")
+        
+        self.client = actionlib.SimpleActionClient('/open_nav', open_nav.msg.OpenNavAction)
+        self.client.wait_for_server()
+
+        rospy.loginfo(" ... done")
+
 
         tim1 = rospy.Timer(rospy.Duration(0.2), self.timer_callback)
         self.refresh()
@@ -174,10 +187,17 @@ class Explorator(KrigingVisualiser):
                 print "click outside the grid"
             else:
                 print cx, cy
-                               
-#            for i in self.topo_map.waypoints:
-#                if (cy,cx) == i.ind:
-#                    print i.name, i.coord
+
+            for i in self.topo_map.waypoints:
+                if (cy,cx) == i.ind:
+                    goal = open_nav.msg.OpenNavActionGoal()
+                    goal.goal.goal.latitude=i.coord.lat
+                    goal.goal.goal.longitude=i.coord.lon
+                    self.client.send_goal(goal)
+                    self.client.wait_for_result()
+                    # Prints out the result of executing the action
+                    ps = self.client.get_result()
+                    print ps
                 
 
     def draw_krigged(self, nm):
