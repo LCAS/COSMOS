@@ -45,10 +45,13 @@ class ViewerCanvas(object):
         cv2.circle(self.image, (int(mx), int(my)), size, b, thickness)
 
 
-    def draw_waypoints(self, waypoints, colour, thickness=2):
+    def draw_waypoints(self, waypoints, colourF, colourT, thickness=2):
         for i in waypoints:
             mx0, my0 = self._coord2pix(i.coord)
-            cv2.circle(self.image, (int(mx0), int(my0)), 2, colour, thickness=thickness)
+            if i.visited:
+                cv2.circle(self.image, (int(mx0), int(my0)), 2, colourF, thickness=thickness)
+            else:
+                cv2.circle(self.image, (int(mx0), int(my0)), 2, colourT, thickness=thickness)
 #        for i in range(0, len(grid)):
 #            for j in range(0, len(grid[0])):
 #                mx0, my0 = self._coord2pix(grid[i][j])

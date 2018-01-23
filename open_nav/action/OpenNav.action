@@ -1,8 +1,5 @@
-#goal definition
 sensor_msgs/NavSatFix coords
 ---
-#result definition
 bool success
 ---
-#feedback
 string progress

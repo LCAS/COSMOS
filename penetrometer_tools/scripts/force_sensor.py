@@ -50,7 +50,8 @@ def talker():
 #            print '::'
             rospy.sleep(0.05)
     #        rospy.loginfo(hello_str)
-            pub.publish(float(datao[1]))
+            val = (float(datao[1])*0.453592)/1000.0
+            pub.publish(val)
         else:
             print "WARNING"
             print sdata

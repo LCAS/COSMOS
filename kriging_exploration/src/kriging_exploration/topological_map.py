@@ -35,6 +35,7 @@ class TopoNode(object):
         self.name = name    #Node Name
         self.coord = coord  #Node coordinates
         self.ind = ind      #Grid Indexes
+        self.visited = False
 
     def __repr__(self):
         a = dir(self)

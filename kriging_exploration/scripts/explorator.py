@@ -21,8 +21,10 @@ import actionlib
 
 from cosmos_msgs.msg import KrigInfo
 import kriging_exploration.map_coords
+import std_msgs.msg
 
 import open_nav.msg
+
 from kriging_exploration.data_grid import DataGrid
 from kriging_exploration.map_coords import MapCoords
 from kriging_exploration.visualiser import KrigingVisualiser
@@ -78,6 +80,7 @@ class Explorator(KrigingVisualiser):
         rospy.loginfo("Subscribing to Krig Info")
         rospy.Subscriber("/kriging_data", KrigInfo, self.data_callback)
         rospy.Subscriber("/fix", NavSatFix, self.gps_callback)
+        rospy.Subscriber('/penetrometer_scan', std_msgs.msg.String, self.scan_callback)
 
 
         rospy.loginfo(" ... Connecting to Open_nav")
@@ -125,6 +128,7 @@ class Explorator(KrigingVisualiser):
         if not np.isnan(data.latitude):
             gps_coord = MapCoords(data.latitude,data.longitude)
             self.gps_canvas.draw_coordinate(gps_coord,'white',size=2, thickness=1, alpha=125)
+            self.last_coord=gps_coord
             #self.refresh()
 
     def data_callback(self, msg):
@@ -163,6 +167,24 @@ class Explorator(KrigingVisualiser):
 #        cv2.putText(self.image, self.grid.models[nm].name, (int(520), int(20)), font, 0.8, (200, 200, 200), 2)
 #        self.draw_legend(self.vmin, self.vmax)
 
+
+    def scan_callback(self, msg):
+        if msg.data == 'Reading':
+            print "GOT READING!!!"
+            cx, cy = self.grid.get_cell_inds_from_coords(self.last_coord)
+            if cx <0 or cy<0:
+                print "Reading outside the grid"
+            else:
+                print 'Reading at: ', cx, cy
+                for i in self.topo_map.waypoints:
+                    if (cy,cx) == i.ind:
+                        print 'Setting: ', i.name, i.coord, "as Visited"
+                        i.visited= True
+                        self.grid_canvas.draw_waypoints(self.topo_map.waypoints, (0,255,0,2), (0,0,255,2), thickness=1)
+                        self.redraw()
+
+            
+
     def click_callback(self, event, x, y, flags, param):
         
         if event == cv2.EVENT_RBUTTONDOWN:
@@ -177,7 +199,9 @@ class Explorator(KrigingVisualiser):
             for i in self.topo_map.waypoints:
                 if (cy,cx) == i.ind:
                     print i.name, i.coord
-
+                    i.visited= True
+                    self.grid_canvas.draw_waypoints(self.topo_map.waypoints, (0,255,0,2), (0,0,255,2), thickness=1)
+                    self.redraw()
 
         if event == cv2.EVENT_LBUTTONDOWN:
             click_coord = self.satellite._pix2coord(x,y)
@@ -190,13 +214,16 @@ class Explorator(KrigingVisualiser):
 
             for i in self.topo_map.waypoints:
                 if (cy,cx) == i.ind:
-                    goal = open_nav.msg.OpenNavActionGoal()
+                    targ = open_nav.msg.OpenNavActionGoal()
 
                     #goal.goal.goal.header.
-                    goal.goal.coords.header.stamp=rospy.Time.now()
-                    goal.goal.coords.latitude=i.coord.lat
-                    goal.goal.coords.longitude=i.coord.lon
-                    self.client.send_goal(goal)
+                    targ.goal.coords.header.stamp=rospy.Time.now()
+                    targ.goal.coords.latitude=i.coord.lat
+                    targ.goal.coords.longitude=i.coord.lon
+
+                    print targ                    
+                    
+                    self.client.send_goal(targ.goal)
                     self.client.wait_for_result()
                     # Prints out the result of executing the action
                     ps = self.client.get_result()
@@ -284,10 +311,10 @@ class Explorator(KrigingVisualiser):
                 self.current_model=0
                 self.redraw()
         elif k == ord('w'):
-            self.grid_canvas.draw_waypoints(self.topo_map.waypoints, (128,128,128,2), thickness=1)
+            self.grid_canvas.draw_waypoints(self.topo_map.waypoints, (0,255,0,2), (0,0,255,2), thickness=1)
             self.redraw()
         elif k == ord('e'):
-            self.exploration_canvas.draw_waypoints(self.explo_plan.targets, (255,128,128,2), thickness=2)
+            self.exploration_canvas.draw_waypoints(self.explo_plan.targets, (255,128,128,2), (255,128,128,2), thickness=2)
             self.exploration_canvas.draw_plan(self.explo_plan.route, (0,128,128,2), thickness=1)
             self.redraw()            
     
