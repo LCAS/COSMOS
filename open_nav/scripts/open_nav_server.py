@@ -1,5 +1,6 @@
 #! /usr/bin/env python
 
+import numpy as np
 import rospy
 
 import actionlib
@@ -7,6 +8,8 @@ from sensor_msgs.msg import NavSatFix
 import open_nav.msg
 
 from geometry_msgs.msg import Twist
+
+from kriging_exploration.map_coords import MapCoords
 
 class opennavserver(object):
 
@@ -16,6 +19,7 @@ class opennavserver(object):
     def __init__(self, name):
         self.cancelled = False
         self._action_name = name
+        self.first_fix = True
         
         #self.brand_image_path = rospy.get_param("~brand_image_path",'/tmp/Tweeter_branding.png')
         rospy.loginfo("Creating action servers.")
@@ -23,6 +27,7 @@ class opennavserver(object):
         self._as = actionlib.SimpleActionServer(self._action_name, open_nav.msg.OpenNavAction, execute_cb = self.executeCallback, auto_start = False)
         self._as.register_preempt_callback(self.preemptCallback)
 
+        rospy.Subscriber("/fix", NavSatFix, self.gps_callback)
 
         rospy.loginfo(" ...starting")
         self._as.start()
@@ -35,6 +40,16 @@ class opennavserver(object):
         rospy.spin()
 
 
+    def gps_callback(self, data):
+        if not np.isnan(data.latitude):
+            self.gps_coord = MapCoords(data.latitude,data.longitude)
+            if not self.first_fix:
+                ang = self.gps_coord - self.last_coord
+                print ang
+            self.first_fix = False
+            self.last_coord=self.gps_coord
+            
+            #self.refresh()
         
     def executeCallback(self, goal):
         rospy.loginfo("Navigating...")
@@ -43,6 +58,11 @@ class opennavserver(object):
         #self._as.publish_feedback(self._feedback)
 
         print goal
+
+        goal_coord = MapCoords(goal.coords.latitude,goal.coords.longitude)
+
+        print "RESULT"
+        print self.gps_coord - goal_coord
 
         result = True
         
