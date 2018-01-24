@@ -224,10 +224,10 @@ class Explorator(KrigingVisualiser):
                     print targ                    
                     
                     self.client.send_goal(targ.goal)
-                    self.client.wait_for_result()
+                    #self.client.wait_for_result()
                     # Prints out the result of executing the action
-                    ps = self.client.get_result()
-                    print ps
+                    #ps = self.client.get_result()
+                    #print ps
                 
 
     def draw_krigged(self, nm):

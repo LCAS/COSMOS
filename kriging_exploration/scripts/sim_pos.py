@@ -29,14 +29,14 @@ class SImPos(object):
     
     def time_callback(self, event):
         self.precord = self.gps_coord
-        self.northang = self.northang + (self.cmd.angular.z*0.5)
+        self.northang = self.northang + (self.cmd.angular.z)
         
         if self.northang > self.two_pi:
             self.northang = self.northang - self.two_pi
         if self.northang < -self.two_pi:
             self.northang = self.northang + self.two_pi
-        northing_dif = (self.cmd.linear.x*0.5) * math.sin(self.northang)
-        easting_dif =  (self.cmd.linear.x*0.5) * math.cos(self.northang)
+        northing_dif = (self.cmd.linear.x*0.5) * math.cos(self.northang)
+        easting_dif =  (self.cmd.linear.x*0.5) * math.sin(self.northang)
         if northing_dif != 0.0 or easting_dif !=0:
             self.gps_coord = self.gps_coord._get_rel_point(easting_dif, northing_dif)
         
