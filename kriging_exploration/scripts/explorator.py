@@ -79,7 +79,7 @@ class Explorator(KrigingVisualiser):
 
         self.explo_plan = ExplorationPlan(self.topo_map, 'WayPoint498', args.initial_percent)
         self.navigating = False
-        self.exploring = False
+        self.exploring = 0
         
         
         print "NUMBER OF TARGETS:"
@@ -113,7 +113,7 @@ class Explorator(KrigingVisualiser):
         rospy.Subscriber("/kriging_data", KrigInfo, self.data_callback)
         rospy.Subscriber("/fix", NavSatFix, self.gps_callback)
         rospy.Subscriber('/penetrometer_scan', std_msgs.msg.String, self.scan_callback)
-
+        self.req_data_pub = rospy.Publisher('/request_scan', std_msgs.msg.String, latch=False, queue_size=1)
 
         rospy.loginfo(" ... Connecting to Open_nav")
         
@@ -148,6 +148,9 @@ class Explorator(KrigingVisualiser):
                 self.navigating = False
                 if self.exploring:
                    self.explo_plan.explored_wp.append(self.explo_plan.route.pop(0))
+                   info_str='Do_reading'
+                   self.req_data_pub.publish(info_str)
+                   
 #        else:
 #            if self.exploring:
 #                print "waiting for new goal"
@@ -443,12 +446,12 @@ class Explorator(KrigingVisualiser):
                 targ.goal.coords.longitude=gg.coord.lon
     
                 #print gg
-                self.exploring=True
+                self.exploring=1
                 self.navigating=True
                 self.open_nav_client.send_goal(targ.goal)
             else:
                 print "Done Exploring"
-                self.exploring = False
+                self.exploring = 0
 
 
     

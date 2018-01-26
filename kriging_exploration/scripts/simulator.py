@@ -24,6 +24,7 @@ from kriging_exploration.satellite import SatelliteImage
 from kriging_exploration.map_coords import MapCoords
 from kriging_exploration.data_grid import DataGrid
 #from krigging_data import KriggingData
+from sensor_msgs.msg import NavSatFix
 
 
 def data_to_yaml(data_fn):
@@ -69,6 +70,8 @@ class simulator(object):
         
         signal.signal(signal.SIGINT, self.signal_handler)
         self.data_pub = rospy.Publisher('/kriging_data', KrigInfo, latch=False, queue_size=1)
+        rospy.Subscriber("/fix", NavSatFix, self.gps_callback)
+        rospy.Subscriber('/request_scan', std_msgs.msg.String, self.scan_callback)
 
 
         print "Loading Satellite Image"
@@ -123,6 +126,29 @@ class simulator(object):
                 
                 self.data_pub.publish(hmm)
 
+
+    def gps_callback(self, data):
+        if not np.isnan(data.latitude):
+            self.last_coord=data
+
+    def scan_callback(self, msg):
+        if msg.data == 'Do_reading':
+            
+            gps_coord = MapCoords(self.last_coord.latitude,self.last_coord.longitude) 
+            cx, cy = self.grid.get_cell_inds_from_coords(gps_coord)
+            hmm = KrigInfo()               
+            hmm.header = std_msgs.msg.Header()
+            hmm.header.stamp = rospy.Time.now() 
+            hmm.coordinates = self.last_coord
+#            hmm.coordinates.longitude = click_coord.lon
+            
+            for i in self.grid.models:
+                mmh = KrigMsg()
+                mmh.model_name = i.name
+                mmh.measurement = i.output[cy][cx]
+                hmm.data.append(mmh)
+            
+            self.data_pub.publish(hmm)
 
     def _change_mode(self, k):
         if k == 27:           
