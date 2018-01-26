@@ -8,31 +8,51 @@ from map_coords import MapCoords
 
 
 
-#def line_intersection(line1, line2):
-#    xdiff = (line1[0][0] - line1[1][0], line2[0][0] - line2[1][0])
-#    ydiff = (line1[0][1] - line1[1][1], line2[0][1] - line2[1][1]) #Typo was here
-#
-#    def det(a, b):
-#        return a[0] * b[1] - a[1] * b[0]
-#
-#    div = det(xdiff, ydiff)
-#    if div == 0:
-#       raise Exception('lines do not intersect')
-#
-#    d = (det(*line1), det(*line2))
-#    x = det(d, xdiff) / div
-#    y = det(d, ydiff) / div
-#    return x, y
-#
-#print line_intersection((A, B), (C, D))
+def line_intersection(l1, l2):
+#    line1 = [l1[0].coord.northing, l1[0].coord.easting, l1[1].coord.northing, l1[1].coord.easting]
+#    line2 = [l2[0].coord.northing, l2[0].coord.easting, l2[1].coord.northing, l2[1].coord.easting]
+    
+    line1 = [[l1[0].ind[0], l1[0].ind[1]], [l1[1].ind[0], l1[1].ind[1]]]
+    line2 = [[l2[0].ind[0], l2[0].ind[1]], [l2[1].ind[0], l2[1].ind[1]]]    
+    
+#    xdiff = (line1[0].coord.northing - line1[1].coord.northing, line2[0].coord.northing - line2[1].coord.northing)
+#    ydiff = (line1[0].coord.easting - line1[1].coord.easting, line2[0].coord.easting - line2[1].coord.easting) #Typo was here
+    xdiff = (line1[0][0] - line1[1][0], line2[0][0] - line2[1][0])
+    ydiff = (line1[0][1] - line1[1][1], line2[0][1] - line2[1][1])
+
+    def det(a, b):
+        return a[0] * b[1] - a[1] * b[0]
+
+    div = det(xdiff, ydiff)
+    if div == 0:
+        return False, (-1, -1)
+
+    d = (det(*line1), det(*line2))
+    x = det(d, xdiff) / div
+    y = det(d, ydiff) / div
+
+    #print x,y
+    #check interval
+
+    if x>= min(line1[0][0], line1[1][0]) and x <= max(line1[0][0], line1[1][0]):
+        if x>= min(line2[0][0], line2[1][0]) and x <= max(line2[0][0], line2[1][0]):
+            if  y>= min(line1[0][1], line1[1][1]) and y <= max(line1[0][1], line1[1][1]):
+                if  y>= min(line2[0][1], line2[1][1]) and y <= max(line2[0][1], line2[1][1]):
+                    return True, (x, y)
+    
+    return False, (-1, -1)
+
+
 
 
 class ExplorationPlan(object):
-    def __init__(self, topo_map, initial_waypoint):
+    def __init__(self, topo_map, initial_waypoint, percentage=0.05):
+        self.max_iters=1000        
         self.targets=[]
+        self.explored_wp=[]
         self.route=[]
         self.route_nodes=[]
-        self._generate_targets(topo_map, initial_waypoint)
+        self._generate_targets(topo_map, initial_waypoint, percentage)
         self._get_plan(initial_waypoint)
         
         
@@ -42,8 +62,8 @@ class ExplorationPlan(object):
                 return i
                 
     
-    def _generate_targets(self, topo_map, initial_waypoint):
-        ntargets = int(np.ceil(len(topo_map.waypoints))*0.05)
+    def _generate_targets(self, topo_map, initial_waypoint, percentage):
+        ntargets = int(np.ceil(len(topo_map.waypoints))*percentage)
         N = 0
         for item in topo_map.waypoints:
             N += 1
@@ -73,12 +93,18 @@ class ExplorationPlan(object):
         groute, gdist = self._create_greedy_plan(initial_waypoint)
         rroute, rdist = self._create_random_plan(initial_waypoint)
         
-        print "Greedy: " + str(gdist) + " Random: " + str(rdist)
         
         if gdist < rdist:
-            self.route = groute
+            route = groute
         else:
-            self.route = rroute
+            route = rroute
+        
+        route, dist = self.optimise_route(route)
+        self.route = route
+
+        
+        print "Greedy: " + str(gdist) + " Random: " + str(rdist) + " Optimised: " + str(dist)
+
         
     
     def _create_greedy_plan(self, initial_waypoint):
@@ -100,17 +126,68 @@ class ExplorationPlan(object):
             #self.route_nodes.append(local_targs[min_ind].name)
             local_targs.pop(min_ind)
         
-        print [x.name for x in route]
-        
-        dist = 0
-        for i in range(1, len(route)):
-            d = route[i].coord - route[i-1].coord
-            dist+=d[0]
+        #print [x.name for x in route]
+        dist = self.get_route_dist(route)
         
         #print "TOTAL DIST: " + str(dist)
         return route, dist
             
+    def get_route_dist(self, route):
+        dist = 0
+        for i in range(1, len(route)):
+            d = route[i].coord - route[i-1].coord
+            dist+=d[0]
+        return dist
+    
+    
+    def optimise_route(self, route):
+        iters=0
+        min_route=route[:]
+        min_dist = self.get_route_dist(min_route)
+        while iters < self.max_iters:
+            swp = self.find_intersections(route)
+            if swp:
+                #route[swp[0]], route[swp[1]] = route[swp[1]], route[swp[0]]
+                i=0
+                while i<len(swp):
+                    route[swp[i]], route[swp[i+1]] = route[swp[i+1]], route[swp[i]]
+                    i+=2
+                dist = self.get_route_dist(route)
+                if dist < min_dist:
+                    min_route=route[:]
+                    min_dist=dist
+            else:
+                dist = self.get_route_dist(route)
+                print "no more crossings", dist
+                break
+            iters+=1
+            print "optimising iter: ",iters
+        return min_route, min_dist
             
+        
+    
+    def find_intersections(self, route):
+        swp=[]
+        ind = 1
+        jnd = 0
+        while jnd < (len(route)-1):
+            line1=(route[jnd],route[jnd+1])
+            ind = jnd +2
+            while ind < (len(route)-1):
+                line2=(route[ind], route[ind+1])
+                res = line_intersection(line1, line2)
+                #print len(route), ": ", jnd, "->",jnd+1, " : ",ind,ind+1
+                if res[0]:
+                    #print "intersecion between: ", line1[0].name,"->",line1[1].name, " and ", line2[0].name,"->",line2[1].name
+                    #print "swap: ", jnd+1, "with:", ind
+                    swp.append(jnd+1)
+                    swp.append(ind)                    
+                    #return jnd+1, ind
+                ind+=1
+            jnd+=1
+        return swp
+            
+    
         
     
     def _create_random_plan(self, initial_waypoint):
@@ -121,10 +198,7 @@ class ExplorationPlan(object):
             if i.name != initial_waypoint:
                 route.append(i)
         
-        dist = 0
-        for i in range(1, len(route)):
-            d = route[i].coord - route[i-1].coord
-            dist+=d[0]
+        dist = self.get_route_dist(route)
         
         #print "TOTAL DIST: " + str(dist)
         return route, dist

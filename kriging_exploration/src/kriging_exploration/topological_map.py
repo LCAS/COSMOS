@@ -64,5 +64,5 @@ class TopoMap(object):
                     d = TopoNode(name, grid.cells[i][j], (i, j))
                     self.waypoints.append(d)
                     ind+=1
-                    print name
+                    #print name
         #print len(self.waypoints)

@@ -105,10 +105,7 @@ class DataGrid(object):
             cy =-1
         return cx, cy
     
-
-#    def get_cell_inds_from_pix(self, x, y):
-#        return x, y
-    
+   
     
     def set_limits(self, limits):
         self.limits = limits

@@ -42,12 +42,7 @@ class KriggingData(object):
             datablah.append([i.x, i.y, i.value])
         
         datablah = np.asarray(datablah)
-        
-        #print datablah
-        #print self.gridx
-        #print self.gridy
-        
-        
+                       
         print "OK"
         OK = OrdinaryKriging(datablah[:, 0], datablah[:, 1], datablah[:, 2], variogram_model='linear', verbose=False, enable_plotting=False)
         print "OK Done"
@@ -65,36 +60,17 @@ class KriggingData(object):
 
 
         self.deviation=np.sqrt(self.variance)
-        self.sigmapercent =  self.deviation/self.output
+        #self.sigmapercent =  self.deviation/self.output
 
+        
+        #self.min_var = np.min([np.nonzero(self.variance)])
         self.min_var = np.min(self.variance)
         self.max_var = np.max(self.variance)
 
         self.min_val = np.min(self.output)
         self.max_val = np.max(self.output)
         
-        #print self.variance
-        print self.sigmapercent
-        self.min_var = np.min(self.variance)
-        self.max_var = np.max(self.variance)
-        #print self.min_var, self.max_var
-
-
-
-#        self.variance[self.variance < 0] = 0.0
-
-
-#        print self.variance
-
-        self.max_var = np.max(self.variance)
-        self.variance = self.variance/self.max_var
-
-  
+        self.min_dev = np.min(self.deviation)
+        self.max_dev = np.max(self.deviation)
         
-        #self.variance = np.place(self.variance, self.variance>0, [0])
-        #print "Output: ", z.shape        
-        
-        self.min_var = np.min(self.variance)
-        self.max_var = np.max(self.variance)
 
-        print self.min_val, np.max(self.output)

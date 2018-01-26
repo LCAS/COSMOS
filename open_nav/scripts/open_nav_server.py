@@ -73,10 +73,9 @@ class opennavserver(object):
         result = self.navigate(goal_coord)
         
         if not self.cancelled :
+            print result
             self._result.success = result
-            #self._as.publish_feedback(self._feedback)
             self._as.set_succeeded(self._result)
-
 
     def navigate(self, goal_coord):
         cmd = Twist()

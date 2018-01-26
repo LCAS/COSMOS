@@ -39,27 +39,20 @@ class ViewerCanvas(object):
 
     def draw_coordinate(self, coord, colour, size=6, thickness=2, alpha=128):
         mx, my =self._coord2pix(coord)        
-        b = [255*x for x in mcolors.hex2color(mcolors.cnames[colour])]
+        b = [int(255*x) for x in mcolors.hex2color(mcolors.cnames[colour])]
         b = b[::-1]
         b.append(alpha)
         cv2.circle(self.image, (int(mx), int(my)), size, b, thickness)
 
 
-    def draw_waypoints(self, waypoints, colourF, colourT, thickness=2):
+    def draw_waypoints(self, waypoints, colour,thickness=2):
         for i in waypoints:
             mx0, my0 = self._coord2pix(i.coord)
-            if i.visited:
-                cv2.circle(self.image, (int(mx0), int(my0)), 2, colourF, thickness=thickness)
-            else:
-                cv2.circle(self.image, (int(mx0), int(my0)), 2, colourT, thickness=thickness)
-#        for i in range(0, len(grid)):
-#            for j in range(0, len(grid[0])):
-#                mx0, my0 = self._coord2pix(grid[i][j])
-#                cv2.circle(self.image, (int(mx0), int(my0)), 2, colour, thickness=thickness)
-    
+            cv2.circle(self.image, (int(mx0), int(my0)), 2, colour, thickness=thickness)
+
+
     def draw_plan(self, waypoints, colour, thickness=2):
         for i in range(0, len(waypoints)-1):
-            print str(i) + "-> draw from: " + waypoints[i].name + " to: " + waypoints[i+1].name
             mx0, my0 =self._coord2pix(waypoints[i].coord)
             mx1, my1 =self._coord2pix(waypoints[i+1].coord)
             cv2.line(self.image, (int(mx0), int(my0)), (int(mx1), int(my1)), colour, thickness=thickness)
@@ -107,21 +100,27 @@ class ViewerCanvas(object):
     
     
 
-    def draw_legend(self, vmin, vmax, colmap):
+    def draw_legend(self, vmin, vmax, colmap, title="OUTPUTS"):
         font = cv2.FONT_HERSHEY_SIMPLEX
-        step = (vmax - vmin)/(600-40)
+        
+        if (vmax-vmin) > 1:
+            step = float(vmax - vmin)/float(600-40)
+        else:
+            vmax = vmax + 1000
+            step = float(vmax - vmin)/float(600-40)
+            
 
-        vp = range(int(np.floor(vmin)),int(np.ceil(vmax)), int(np.ceil(step)))
-        print len(vp)        
+        #vp = range(int(np.floor(vmin)),int(np.ceil(vmax)), int(np.ceil(step)))
+        #print len(vp)        
 
-        cv2.rectangle(self.image, (int(0), int(555)), (int(640), int(605)), (255,255,255,0), thickness=-1)
+        #cv2.rectangle(self.image, (int(0), int(555)), (int(640), int(605)), (255,255,255,255), thickness=-1)
         
         if step>1.0:
             ind = 0
             while ind < 560:
 #                print int(vmin+(ind*step))
                 a= colmap.to_rgba(int(vmin+(ind*step)))                
-                b= (int(a[2]*255), int(a[1]*255), int(a[0]*255),0)#int(a[3]*255))                
+                b= (int(a[2]*255), int(a[1]*255), int(a[0]*255),int(a[3]*255))                
                 cv2.rectangle(self.image, (int(ind+40), int(580)), (int(ind+1+40), int(600)), b , thickness=-1)
                 ind+=1
         else:
@@ -130,21 +129,23 @@ class ViewerCanvas(object):
             while ind < 560:
 #                print int(vmin+(ind*step))
                 a= colmap.to_rgba(int(vmin+(ind/step)))                
-                b= (int(a[2]*255), int(a[1]*255), int(a[0]*255),0)#int(a[3]*255))                
+                b= (int(a[2]*255), int(a[1]*255), int(a[0]*255),int(a[3]*255))                
                 cv2.rectangle(self.image, (int(ind+40), int(580)), (int(ind+1+40), int(600)), b , thickness=-1)
                 ind+=1
 
         a= colmap.to_rgba(int(vmin))
-        b= (int(a[2]*255), int(a[1]*255), int(a[0]*255),0)#, int(a[3]*250))
+        b= (int(a[2]*255), int(a[1]*255), int(a[0]*255), int(a[3]*250))
         cv2.putText(self.image, str(np.floor(vmin)) + " Kpa", (int(5), int(575)), font, 0.6, b, 2)
         a= colmap.to_rgba(int(vmax))
-        b= (int(a[2]*255), int(a[1]*255), int(a[0]*255), 0)# int(a[3]*250),0)
-        cv2.putText(self.image, str(np.ceil(vmax)) + " Kpa", (int(520), int(575)), font, 0.6, b, 2)    
+        b= (int(a[2]*255), int(a[1]*255), int(a[0]*255), int(a[3]*250))
+        tsz=cv2.getTextSize(str(np.ceil(vmax)) + " Kpa", font, 0.6, 2)
+        cv2.putText(self.image, str(np.ceil(vmax)) + " Kpa", (int(640)-tsz[0][0]-5, int(575)), font, 0.6, b, 2)
+        cv2.putText(self.image, title, (270,20), font, 0.8, (200, 200, 200,255), 2)
     
     
-    def put_text(self,text):
+    def put_text(self,text,colour=(200,200,200,200)):
         font = cv2.FONT_HERSHEY_SIMPLEX
-        cv2.putText(self.image, text, (int(520), int(20)), font, 0.8, (200, 200, 200), 2)
+        cv2.putText(self.image, text, (int(520), int(20)), font, 0.8, colour, 2)
         
         
         
