@@ -3,6 +3,7 @@
 
 import cv2
 import sys
+import yaml
 
 import signal
 import numpy as np
@@ -73,11 +74,11 @@ class Explorator(KrigingVisualiser):
 
         self.current_model=-1
         self.draw_mode = 'none'
-        self.grid = DataGrid('limits.coords', args.cell_size)
+        self.grid = DataGrid(args.limits_file, args.cell_size)
         self.topo_map= TopoMap(self.grid)
         self.visited_wp=[]
 
-        self.explo_plan = ExplorationPlan(self.topo_map, 'WayPoint498', args.initial_percent)
+        self.explo_plan = ExplorationPlan(self.topo_map, args.initial_waypoint, args.initial_percent)
         self.navigating = False
         self.exploring = 0
         
@@ -279,6 +280,7 @@ class Explorator(KrigingVisualiser):
 
             for i in self.topo_map.waypoints:
                 if (cy,cx) == i.ind:
+                    self.open_nav_client.cancel_goal()
                     targ = open_nav.msg.OpenNavActionGoal()
 
                     #goal.goal.goal.header.
@@ -439,6 +441,7 @@ class Explorator(KrigingVisualiser):
         elif k == ord('g'):
             if len(self.explo_plan.route) >0:
                 gg=self.explo_plan.route[0]
+                self.open_nav_client.cancel_goal()
                 targ = open_nav.msg.OpenNavActionGoal()
     
                 targ.goal.coords.header.stamp=rospy.Time.now()
@@ -452,7 +455,15 @@ class Explorator(KrigingVisualiser):
             else:
                 print "Done Exploring"
                 self.exploring = 0
-
+        elif k == ord('y'):
+            vwp = []
+            for i in self.visited_wp:
+                vwp.append(i.name)
+            yml = yaml.safe_dump(vwp, default_flow_style=False)
+            fh = open("visited.yaml", "w")
+            s_output = str(yml)
+            fh.write(s_output)
+            fh.close                   
 
     
     def signal_handler(self, signal, frame):
@@ -469,10 +480,16 @@ if __name__ == '__main__':
                         help="cell size in meters")
     parser.add_argument("--initial_percent", type=float, default=0.05,
                         help="Percentage of cells to be explored on the initial plan") 
+    parser.add_argument("--limits_file", type=str, default='limits.coords',
+                        help="Percentage of cells to be explored on the initial plan")
+    parser.add_argument("--initial_waypoint", type=str, default='WayPoint498',
+                        help="Percentage of cells to be explored on the initial plan")
     args = parser.parse_args()
     
     rospy.init_node('kriging_exploration')
     #Explorator(53.261685, -0.527158, 16, 640, args.cell_size)
-    Explorator(53.261685, -0.525158, 17, 640, args)
+    
+    #Explorator(53.267213, -0.533420, 17, 640, args)  #Football Field
+    Explorator(53.261685, -0.525158, 17, 640, args) #COSMOS Field
 
     

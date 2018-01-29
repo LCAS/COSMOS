@@ -133,7 +133,7 @@ class simulator(object):
 
     def scan_callback(self, msg):
         if msg.data == 'Do_reading':
-            
+            print "generating reading"
             gps_coord = MapCoords(self.last_coord.latitude,self.last_coord.longitude) 
             cx, cy = self.grid.get_cell_inds_from_coords(gps_coord)
             hmm = KrigInfo()               
@@ -149,6 +149,7 @@ class simulator(object):
                 hmm.data.append(mmh)
             
             self.data_pub.publish(hmm)
+            print hmm    
 
     def _change_mode(self, k):
         if k == 27:           

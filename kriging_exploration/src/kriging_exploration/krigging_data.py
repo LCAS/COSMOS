@@ -12,6 +12,7 @@ class KriggingDataPoint(object):
         self.x = cell_coord[0]
         self.y = cell_coord[1]
         self.value = value
+        self.kriged=False
 
 
 
@@ -46,10 +47,18 @@ class KriggingData(object):
         print "OK"
         OK = OrdinaryKriging(datablah[:, 0], datablah[:, 1], datablah[:, 2], variogram_model='linear', verbose=False, enable_plotting=False)
         print "OK Done"
-        # Creates the kriged grid and the variance grid. Allows for kriging on a rectangular
-        # grid of points, on a masked rectangular grid of points, or with arbitrary points.
-        # (See OrdinaryKriging.__doc__ for more information.)
-        z, ss = OK.execute('grid', self.gridx, self.gridy)
+
+        try:
+            # Creates the kriged grid and the variance grid. Allows for kriging on a rectangular
+            # grid of points, on a masked rectangular grid of points, or with arbitrary points.
+            # (See OrdinaryKriging.__doc__ for more information.)
+            z, ss = OK.execute('grid', self.gridx, self.gridy)
+            self.kriged=True
+        except:
+            print "this failed at: ", self.name
+            ss=np.full(self.shape,-1,dtype=np.float64)
+            z=np.full(self.shape,-1,dtype=np.float64)
+            self.kriged=False
         
         self.output = z
         
