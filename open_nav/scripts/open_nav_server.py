@@ -59,9 +59,6 @@ class opennavserver(object):
         
     def executeCallback(self, goal):
         rospy.loginfo("Navigating...")
-        #open_nav.msg.OpenNavActionFeedback.feedback.progress
-        #self._feedback.feedback.progress = 'Navigating...'
-        #self._as.publish_feedback(self._feedback)
 
         print goal
 

@@ -489,7 +489,7 @@ if __name__ == '__main__':
     rospy.init_node('kriging_exploration')
     #Explorator(53.261685, -0.527158, 16, 640, args.cell_size)
     
-    Explorator(53.267213, -0.533420, 17, 640, args)  #Football Field
-    #Explorator(53.261685, -0.525158, 17, 640, args) #COSMOS Field
+    #Explorator(53.267213, -0.533420, 17, 640, args)  #Football Field
+    Explorator(53.261685, -0.525158, 17, 640, args) #COSMOS Field
 
     
