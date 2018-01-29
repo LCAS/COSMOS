@@ -58,7 +58,7 @@ class DataGrid(object):
         
         print model_name
         
-        print coord
+#        print coord
         print value
         
         if model_name not in model_names:
