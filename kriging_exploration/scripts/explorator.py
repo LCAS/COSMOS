@@ -463,7 +463,17 @@ class Explorator(KrigingVisualiser):
             fh = open("visited.yaml", "w")
             s_output = str(yml)
             fh.write(s_output)
-            fh.close                   
+            fh.close          
+        elif k == ord('l'):
+            print "loading visited"
+            
+            with open("visited.yaml", 'r') as f:
+                visited = yaml.load(f)
+                for i in visited:
+                    for l in self.topo_map.waypoints:
+                        if i == l.name:
+                            self.visited_wp.append(l)
+                            break
 
     
     def signal_handler(self, signal, frame):
