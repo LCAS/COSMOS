@@ -22,8 +22,11 @@ class opennavserver(object):
         self._action_name = name
         self.first_fix = True
         
-        self.maxxvel = 4.0
-        self.maxangvel = 1.0
+        self.maxxvel = 1.0
+        self.maxangvel = 0.5
+        
+#        self.maxxvel = 5.0
+#        self.maxangvel = 1.0        
         
         rospy.on_shutdown(self._shutdown)
         
@@ -41,7 +44,7 @@ class opennavserver(object):
 
         rospy.loginfo("Ready ...")
 
-        self.pub = rospy.Publisher('/cmd_vel', Twist)
+        self.pub = rospy.Publisher('/cmd_vel_thorval', Twist)
 
         rospy.spin()
 

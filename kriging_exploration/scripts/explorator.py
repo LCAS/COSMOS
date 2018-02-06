@@ -81,7 +81,7 @@ class Explorator(KrigingVisualiser):
         self.explo_plan = ExplorationPlan(self.topo_map, args.initial_waypoint, args.initial_percent)
         self.navigating = False
         self.exploring = 0
-        
+        self.n_inputs = 0
         
         print "NUMBER OF TARGETS:"
         print len(self.explo_plan.targets)        
@@ -101,6 +101,7 @@ class Explorator(KrigingVisualiser):
         self.redraw_devi=True
         
         self.model_canvas=[]
+        self.model_legend=[]
         self.kriging_canvas=[]
         self.klegend_canvas=[]
         self.klegend2_canvas=[]
@@ -109,6 +110,12 @@ class Explorator(KrigingVisualiser):
         self.sigma2_canvas=[]
         self.model_canvas_names=[]
         
+        self.mean_out_canvas = ViewerCanvas(self.base_image.shape, self.satellite.centre, self.satellite.res)
+        self.mean_out_legend_canvas = ViewerCanvas(self.base_image.shape, self.satellite.centre, self.satellite.res)
+        self.mean_var_canvas = ViewerCanvas(self.base_image.shape, self.satellite.centre, self.satellite.res)
+        self.mean_var_legend_canvas = ViewerCanvas(self.base_image.shape, self.satellite.centre, self.satellite.res)
+        self.mean_dev_canvas = ViewerCanvas(self.base_image.shape, self.satellite.centre, self.satellite.res)
+        self.mean_dev_legend_canvas = ViewerCanvas(self.base_image.shape, self.satellite.centre, self.satellite.res)        
 
         rospy.loginfo("Subscribing to Krig Info")
         rospy.Subscriber("/kriging_data", KrigInfo, self.data_callback)
@@ -147,11 +154,32 @@ class Explorator(KrigingVisualiser):
             if self.open_nav_client.simple_state ==2:
                 print "DONE NAVIGATING"
                 self.navigating = False
-                if self.exploring:
-                   self.explo_plan.explored_wp.append(self.explo_plan.route.pop(0))
-                   info_str='Do_reading'
-                   self.req_data_pub.publish(info_str)
-                   
+                if self.exploring==1:
+                    self.exploring=2
+        
+        elif self.exploring==2:
+            self.explo_plan.explored_wp.append(self.explo_plan.route.pop(0))
+            info_str='Do_reading'
+            self.req_data_pub.publish(info_str)
+            self.exploring=3
+        
+        elif self.exploring==4:
+            if len(self.explo_plan.route) >0:
+                gg=self.explo_plan.route[0]
+                self.open_nav_client.cancel_goal()
+                targ = open_nav.msg.OpenNavActionGoal()
+    
+                targ.goal.coords.header.stamp=rospy.Time.now()
+                targ.goal.coords.latitude=gg.coord.lat
+                targ.goal.coords.longitude=gg.coord.lon
+    
+                print "Going TO: ", gg
+                self.exploring=1
+                self.navigating=True
+                self.open_nav_client.send_goal(targ.goal)
+            else:
+                print "Done Exploring"
+                self.exploring = 0            
 #        else:
 #            if self.exploring:
 #                print "waiting for new goal"
@@ -162,6 +190,8 @@ class Explorator(KrigingVisualiser):
             gps_coord = MapCoords(data.latitude,data.longitude)            
             self.gps_canvas.draw_coordinate(gps_coord,'black',size=2, thickness=2, alpha=255)
             self.last_coord=gps_coord
+
+
 
     def data_callback(self, msg):
         point_coord = kriging_exploration.map_coords.coord_from_satnav_fix(msg.coordinates)
@@ -176,14 +206,25 @@ class Explorator(KrigingVisualiser):
                 print i.name
                 self.model_canvas_names.append(i.name)
                 self.model_canvas.append(ViewerCanvas(self.base_image.shape, self.satellite.centre, self.satellite.res))
+                self.model_legend.append(ViewerCanvas(self.base_image.shape, self.satellite.centre, self.satellite.res))
                 self.kriging_canvas.append(ViewerCanvas(self.base_image.shape, self.satellite.centre, self.satellite.res))
                 self.klegend_canvas.append(ViewerCanvas(self.base_image.shape, self.satellite.centre, self.satellite.res))
                 self.klegend2_canvas.append(ViewerCanvas(self.base_image.shape, self.satellite.centre, self.satellite.res))
-                self.klegend3_canvas.append(ViewerCanvas(self.base_image.shape, self.satellite.centre, self.satellite.res))                
+                self.klegend3_canvas.append(ViewerCanvas(self.base_image.shape, self.satellite.centre, self.satellite.res))               
                 self.sigma_canvas.append(ViewerCanvas(self.base_image.shape, self.satellite.centre, self.satellite.res))
                 self.sigma2_canvas.append(ViewerCanvas(self.base_image.shape, self.satellite.centre, self.satellite.res))
             self.draw_inputs(self.model_canvas_names.index(i.name))
 
+        self.n_inputs+=1
+        if self.exploring==3:
+            if self.n_inputs>3:
+                self.krieg_all_mmodels()
+                self.draw_mode="deviation"
+                self.current_model=0
+                if self.redraw_devi:
+                    self.draw_all_devs()
+                self.redraw()
+            self.exploring=4
 
     def scan_callback(self, msg):
         if msg.data == 'Reading':
@@ -215,6 +256,7 @@ class Explorator(KrigingVisualiser):
         self.image = cv2.addWeighted(self.exploration_canvas.image, 0.75, self.image, 1.0, 0)
         if self.draw_mode == "inputs" and self.current_model>=0 :
             self.image = cv2.addWeighted(self.model_canvas[self.current_model].image, 0.75, self.image, 1.0, 0)
+            self.image = overlay_image_alpha(self.image, self.model_legend[self.current_model].image)
 
         if self.draw_mode == "kriging":# and self.current_model>=0 :
             self.image = cv2.addWeighted(self.kriging_canvas[self.current_model].image, 0.75, self.image, 1.0, 0)
@@ -230,22 +272,14 @@ class Explorator(KrigingVisualiser):
             self.image = cv2.addWeighted(self.sigma2_canvas[self.current_model].image, 0.75, self.image, 1.0, 0)
             #self.image = cv2.addWeighted(self.klegend2_canvas[self.current_model].image, 1.0, self.image, 1.0, 0)
             self.image = overlay_image_alpha(self.image, self.klegend2_canvas[self.current_model].image)
-            
-        self.show_image = self.image.copy()
-
-    def draw_inputs(self, nm):
         
-        norm = mpl.colors.Normalize(vmin=self.vmin, vmax=self.vmax)
-        cmap = cm.jet
-        colmap = cm.ScalarMappable(norm=norm, cmap=cmap)
-
-        self.model_canvas[nm].clear_image()
-        for i in self.grid.models[nm].orig_data:
-            cell = self.grid.cells[i.y][i.x]
-            a= colmap.to_rgba(int(i.value))                
-            b= (int(a[2]*255), int(a[1]*255), int(a[0]*255), int(a[3]*50))
-            self.model_canvas[nm].draw_cell(cell, self.grid.cell_size, b, thickness=-1)
-            self.model_canvas[nm].put_text(self.grid.models[nm].name)
+        if self.draw_mode == "means":
+            self.image = cv2.addWeighted(self.mean_dev_canvas.image, 0.75, self.image, 1.0, 0)
+            #self.image = cv2.addWeighted(self.klegend2_canvas[self.current_model].image, 1.0, self.image, 1.0, 0)
+            self.image = overlay_image_alpha(self.image, self.mean_dev_legend_canvas.image)
+            
+        
+        self.show_image = self.image.copy()
 
             
 
@@ -297,9 +331,47 @@ class Explorator(KrigingVisualiser):
                     #print ps
                 
 
+
+    def draw_inputs(self, nm):
+        
+        minv =  self.grid.models[nm].lims[0]
+        maxv =  self.grid.models[nm].lims[1]
+
+        if (maxv-minv) <=1:
+            maxv = maxv + 50
+            minv = minv - 50
+            
+        norm = mpl.colors.Normalize(vmin=minv, vmax=maxv)
+        cmap = cm.jet
+        colmap = cm.ScalarMappable(norm=norm, cmap=cmap)
+
+        self.model_canvas[nm].clear_image()
+        self.model_legend[nm].clear_image()
+        
+        for i in self.grid.models[nm].orig_data:
+            cell = self.grid.cells[i.y][i.x]
+            a= colmap.to_rgba(int(i.value))                
+            b= (int(a[2]*255), int(a[1]*255), int(a[0]*255), int(a[3]*50))
+            self.model_canvas[nm].draw_cell(cell, self.grid.cell_size, b, thickness=-1)
+            self.model_canvas[nm].put_text(self.grid.models[nm].name)
+        
+        self.model_legend[nm].put_text(self.grid.models[nm].name)
+        self.model_legend[nm].draw_legend(minv, maxv, colmap, title="Kriging")
+        
+
+
+
     def draw_krigged(self, nm):
         print "drawing kriging" + str(nm)
-        norm = mpl.colors.Normalize(vmin=self.grid.models[nm].min_val, vmax=self.grid.models[nm].max_val)
+
+        minv =  self.grid.models[nm].min_val
+        maxv =  self.grid.models[nm].max_val
+
+        if (maxv-minv) <=1:
+            maxv = maxv + 50
+            minv = minv - 50
+
+        norm = mpl.colors.Normalize(vmin=minv, vmax=maxv)
         cmap = cm.jet
         colmap = cm.ScalarMappable(norm=norm, cmap=cmap)
 
@@ -314,19 +386,27 @@ class Explorator(KrigingVisualiser):
                 self.kriging_canvas[nm].draw_cell(cell, self.grid.cell_size, b, thickness=-1)
         
         self.klegend_canvas[nm].put_text(self.grid.models[nm].name)
-        self.klegend_canvas[nm].draw_legend(self.grid.models[nm].min_val, self.grid.models[nm].max_val, colmap, title="Kriging")
+        self.klegend_canvas[nm].draw_legend(minv, maxv, colmap, title="Kriging")
         
         self.redraw()
 
 
     def draw_variance(self, nm):
         print "drawing variance" + str(nm)
-        norm = mpl.colors.Normalize(vmin=self.grid.models[nm].min_var, vmax=self.grid.models[nm].max_var)
+        
+        minv =  self.grid.models[nm].min_var
+        maxv =  self.grid.models[nm].max_var
+        
+        if (maxv-minv) <=1:
+            maxv = maxv + 50
+            minv = minv - 50
+        
+        norm = mpl.colors.Normalize(vmin=minv, vmax= maxv)
         cmap = cm.jet
         colmap = cm.ScalarMappable(norm=norm, cmap=cmap)
 
         self.sigma_canvas[nm].clear_image()
-        self.klegend_canvas[nm].clear_image()
+        self.klegend2_canvas[nm].clear_image()
         
         for i in range(self.grid.models[nm].shape[0]):
             for j in range(self.grid.models[nm].shape[1]):
@@ -337,13 +417,70 @@ class Explorator(KrigingVisualiser):
 
 
         self.klegend2_canvas[nm].put_text(self.grid.models[nm].name)
-        self.klegend2_canvas[nm].draw_legend(self.grid.models[nm].min_var, self.grid.models[nm].max_var, colmap, title="Variance")
+        self.klegend2_canvas[nm].draw_legend(minv, maxv, colmap, title="Variance")
         self.redraw()
+
+
+
+
+    def draw_means(self):
+        print "drawing mean deviation"
+        
+        minv =  self.grid.min_mean_deviation
+        maxv =  self.grid.max_mean_deviation
+
+        if (maxv-minv) <=1:
+            maxv = maxv + 50
+            minv = minv - 50        
+        
+        
+        norm = mpl.colors.Normalize(vmin=minv, vmax=maxv)
+        cmap = cm.jet
+        colmap = cm.ScalarMappable(norm=norm, cmap=cmap)
+
+        self.mean_dev_canvas.clear_image()
+        self.mean_dev_legend_canvas.clear_image()
+        
+        for i in range(self.grid.shape[0]):
+            for j in range(self.grid.shape[1]):
+                cell = self.grid.cells[i][j]
+                a= colmap.to_rgba(int(self.grid.mean_deviation[i][j]))
+                b= (int(a[2]*255), int(a[1]*255), int(a[0]*255), int(a[3]*50))
+                self.mean_dev_canvas.draw_cell(cell, self.grid.cell_size, b, thickness=-1)
+
+
+        #self.mean_dev_legend_canvas.put_text(self.grid.models[nm].name)
+        self.mean_dev_legend_canvas.draw_legend(minv, maxv, colmap, title="Mean Deviation")
+        
+        self.draw_mode="means"
+        self.redraw()
+
+
+
+#        self.min_mean_output = np.min(self.mean_output)
+#        self.max_mean_output = np.max(self.mean_output)
+#        self.min_mean_variance = np.max(self.mean_variance)
+#        self.max_mean_variance = np.max(self.mean_variance)
+#
+#        self.mean_out_canvas = ViewerCanvas(self.base_image.shape, self.satellite.centre, self.satellite.res)
+#        self.mean_out_legend_canvas = ViewerCanvas(self.base_image.shape, self.satellite.centre, self.satellite.res)
+#        self.mean_var_canvas = ViewerCanvas(self.base_image.shape, self.satellite.centre, self.satellite.res)
+#        self.mean_var_legend_canvas = ViewerCanvas(self.base_image.shape, self.satellite.centre, self.satellite.res)
 
 
     def draw_deviation(self, nm):
         print "drawing deviation" + str(nm)
-        norm = mpl.colors.Normalize(vmin=self.grid.models[nm].min_dev, vmax=self.grid.models[nm].max_dev)
+        
+        minv =  self.grid.models[nm].min_dev
+        maxv =  self.grid.models[nm].max_dev
+
+        if (maxv-minv) <=1:
+            maxv = maxv + 50
+            minv = minv - 50        
+        
+        
+        
+        norm = mpl.colors.Normalize(vmin=minv, vmax=maxv)
         cmap = cm.jet
         colmap = cm.ScalarMappable(norm=norm, cmap=cmap)
 
@@ -359,7 +496,7 @@ class Explorator(KrigingVisualiser):
 
 
         self.klegend3_canvas[nm].put_text(self.grid.models[nm].name)
-        self.klegend3_canvas[nm].draw_legend(self.grid.models[nm].min_dev, self.grid.models[nm].max_dev, colmap, title="Deviation")
+        self.klegend3_canvas[nm].draw_legend(minv, maxv, colmap, title="Deviation")
         self.redraw()
 
 
@@ -437,7 +574,9 @@ class Explorator(KrigingVisualiser):
         elif k == ord('e'):
             self.exploration_canvas.draw_waypoints(self.explo_plan.targets, (255,128,128,2), thickness=2)
             self.exploration_canvas.draw_plan(self.explo_plan.route, (0,128,128,2), thickness=1)
-            self.redraw()            
+            self.redraw()
+            xnames = [x.name for x in self.explo_plan.route]
+            print xnames
         elif k == ord('g'):
             if len(self.explo_plan.route) >0:
                 gg=self.explo_plan.route[0]
@@ -448,7 +587,7 @@ class Explorator(KrigingVisualiser):
                 targ.goal.coords.latitude=gg.coord.lat
                 targ.goal.coords.longitude=gg.coord.lon
     
-                #print gg
+                print "Going TO: ", gg
                 self.exploring=1
                 self.navigating=True
                 self.open_nav_client.send_goal(targ.goal)
@@ -475,6 +614,10 @@ class Explorator(KrigingVisualiser):
                             self.visited_wp.append(l)
                             break
 
+        elif k == ord('a'):
+            self.grid.calculate_mean_grid()
+            self.draw_means()
+            self.draw_mode="means"
     
     def signal_handler(self, signal, frame):
         self.running = False

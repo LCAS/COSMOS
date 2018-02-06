@@ -16,8 +16,6 @@ class DataGrid(object):
         self._load_limits(limits_file)
         self.create_grid(cell_size)
 
-
-
         self.models=[]
 
 
@@ -110,6 +108,28 @@ class DataGrid(object):
     def set_limits(self, limits):
         self.limits = limits
 
+
+    def calculate_mean_grid(self):
+        self.mean_output=np.full(self.shape,0,dtype=np.float64)
+        self.mean_variance=np.full(self.shape,0,dtype=np.float64)
+        self.mean_deviation=np.full(self.shape,0,dtype=np.float64)
+        for i in range(self.shape[0]):
+            for j in range(self.shape[1]):                
+                self.mean_output[i][j]=np.average([x.output[i][j] for x in self.models])
+                self.mean_variance[i][j]=np.average([x.variance[i][j] for x in self.models])
+                self.mean_deviation[i][j]=np.average([x.deviation[i][j] for x in self.models])
+        
+        
+        self.min_mean_output = np.min(self.mean_output)
+        self.max_mean_output = np.max(self.mean_output)
+        self.min_mean_variance = np.min(self.mean_variance)
+        self.max_mean_variance = np.max(self.mean_variance)
+        self.min_mean_deviation = np.min(self.mean_deviation)
+        self.max_mean_deviation = np.max(self.mean_deviation)
+        print "-----"
+        print self.min_mean_deviation, self.max_mean_deviation
+        #print self.mean_deviation
+        print "-----"
 
     def get_max_min_vals(self):
         self.valmin = np.floor(np.min([x.lims[0] for x in self.models]))

@@ -45,6 +45,7 @@ class KriggingData(object):
         datablah = np.asarray(datablah)
                        
         print "OK"
+        print datablah
         OK = OrdinaryKriging(datablah[:, 0], datablah[:, 1], datablah[:, 2], variogram_model='linear', verbose=False, enable_plotting=False)
         print "OK Done"
 
@@ -56,8 +57,8 @@ class KriggingData(object):
             self.kriged=True
         except:
             print "this failed at: ", self.name
-            ss=np.full(self.shape,-1,dtype=np.float64)
-            z=np.full(self.shape,-1,dtype=np.float64)
+            ss=np.full(self.shape,0,dtype=np.float64)
+            z=np.full(self.shape,np.average(datablah[:, 2]),dtype=np.float64)
             self.kriged=False
         
         self.output = z

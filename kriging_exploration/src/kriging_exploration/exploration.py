@@ -101,7 +101,7 @@ class ExplorationPlan(object):
         
         route, dist = self.optimise_route(route)
         self.route = route
-
+        self.route.pop(0)
         
         print "Greedy: " + str(gdist) + " Random: " + str(rdist) + " Optimised: " + str(dist)
 

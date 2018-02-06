@@ -106,7 +106,8 @@ class ViewerCanvas(object):
         if (vmax-vmin) > 1:
             step = float(vmax - vmin)/float(600-40)
         else:
-            vmax = vmax + 1000
+            vmax = vmax + 500
+            vmin = vmin - 500
             step = float(vmax - vmin)/float(600-40)
             
 
