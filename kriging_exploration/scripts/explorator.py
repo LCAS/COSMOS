@@ -80,6 +80,7 @@ class Explorator(KrigingVisualiser):
 
         self.explo_plan = ExplorationPlan(self.topo_map, args.initial_waypoint, args.initial_percent)
         self.navigating = False
+        self.pause_exp = False
         self.exploring = 0
         self.n_inputs = 0
         
@@ -158,28 +159,30 @@ class Explorator(KrigingVisualiser):
                     self.exploring=2
         
         elif self.exploring==2:
-            self.explo_plan.explored_wp.append(self.explo_plan.route.pop(0))
-            info_str='Do_reading'
-            self.req_data_pub.publish(info_str)
-            self.exploring=3
+            if not self.pause_exp:
+                self.explo_plan.explored_wp.append(self.explo_plan.route.pop(0))
+                info_str='Do_reading'
+                self.req_data_pub.publish(info_str)
+                self.exploring=3
         
         elif self.exploring==4:
-            if len(self.explo_plan.route) >0:
-                gg=self.explo_plan.route[0]
-                self.open_nav_client.cancel_goal()
-                targ = open_nav.msg.OpenNavActionGoal()
-    
-                targ.goal.coords.header.stamp=rospy.Time.now()
-                targ.goal.coords.latitude=gg.coord.lat
-                targ.goal.coords.longitude=gg.coord.lon
-    
-                print "Going TO: ", gg
-                self.exploring=1
-                self.navigating=True
-                self.open_nav_client.send_goal(targ.goal)
-            else:
-                print "Done Exploring"
-                self.exploring = 0            
+            if not self.pause_exp:
+                if len(self.explo_plan.route) >0:
+                    gg=self.explo_plan.route[0]
+                    self.open_nav_client.cancel_goal()
+                    targ = open_nav.msg.OpenNavActionGoal()
+        
+                    targ.goal.coords.header.stamp=rospy.Time.now()
+                    targ.goal.coords.latitude=gg.coord.lat
+                    targ.goal.coords.longitude=gg.coord.lon
+        
+                    print "Going TO: ", gg
+                    self.exploring=1
+                    self.navigating=True
+                    self.open_nav_client.send_goal(targ.goal)
+                else:
+                    print "Done Exploring"
+                    self.exploring = 0
 #        else:
 #            if self.exploring:
 #                print "waiting for new goal"
@@ -219,10 +222,13 @@ class Explorator(KrigingVisualiser):
         if self.exploring==3:
             if self.n_inputs>3:
                 self.krieg_all_mmodels()
-                self.draw_mode="deviation"
-                self.current_model=0
-                if self.redraw_devi:
-                    self.draw_all_devs()
+                self.grid.calculate_mean_grid()
+                self.draw_means()
+                self.draw_mode="means"
+                #self.draw_mode="deviation"
+#                self.current_model=0
+#                if self.redraw_devi:
+#                    self.draw_all_devs()
                 self.redraw()
             self.exploring=4
 
@@ -452,7 +458,7 @@ class Explorator(KrigingVisualiser):
         #self.mean_dev_legend_canvas.put_text(self.grid.models[nm].name)
         self.mean_dev_legend_canvas.draw_legend(minv, maxv, colmap, title="Mean Deviation")
         
-        self.draw_mode="means"
+        #self.draw_mode="means"
         self.redraw()
 
 
@@ -557,6 +563,15 @@ class Explorator(KrigingVisualiser):
                 self.draw_mode="kriging"
                 self.current_model=0
                 self.redraw()
+
+        elif k == ord('k'):
+            if self.n_models > 0:
+                self.draw_mode="kriging"
+                self.current_model=0
+                if self.redraw_kriged:
+                    self.draw_all_outputs()
+                self.redraw()
+
         elif k == ord('>'):
             self.current_model+=1
             if self.current_model >= self.n_models:
@@ -618,6 +633,9 @@ class Explorator(KrigingVisualiser):
             self.grid.calculate_mean_grid()
             self.draw_means()
             self.draw_mode="means"
+
+        elif k == ord('p'):    
+            self.pause_exp= not self.pause_exp
     
     def signal_handler(self, signal, frame):
         self.running = False
