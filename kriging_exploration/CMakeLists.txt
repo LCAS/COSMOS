@@ -40,7 +40,7 @@ catkin_python_setup()
 
 
 catkin_package(
-#  INCLUDE_DIRS include
+  INCLUDE_DIRS include
 #  LIBRARIES kriging_exploration
 #  CATKIN_DEPENDS message_generation rospy std_msgs
 #  DEPENDS system_lib
@@ -57,6 +57,9 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
 )
 
+
+add_executable(tsp_service src/tsp.cpp)
+  
 
 
 
