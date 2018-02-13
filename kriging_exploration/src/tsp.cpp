@@ -1,5 +1,9 @@
 #include "tsp.h"
 
+#include "ros/ros.h"
+#include "kriging_exploration/GetTsp.h"
+
+
 CTSP::CTSP(float ix[],float iy[],int leni)
 {
     len = leni;
@@ -142,20 +146,52 @@ void CTSP::solve(int iter)
     }
 }
 
-int main(int argc,char* argv[])
+
+
+bool plan_tsp(kriging_exploration::GetTsp::Request  &req, kriging_exploration::GetTsp::Response &res)
 {
-    float x[500];
-    float y[500];
-    int len = 0;
-    FILE *file = fopen(argv[1],"r");
-    while (feof(file)==0)
-    {
-        fscanf(file,"%f %f\n",&x[len],&y[len]);
-        len++;
-    }
-    fclose(file);
-    CTSP tsp(x,y,len);
-    tsp.solve(len*2);
-    tsp.save(argv[2]);
+//        fscanf(file,"%f %f\n",&x[len],&y[len]);
+//        len++;
+  int len = 0;
+  float *x = &req.x[0];
+  float *y = &req.y[0];
+
+  len = req.x.size();
+
+
+  ROS_INFO("sending array len: %d", len);
+  CTSP tsp(x, y,len);
+  tsp.solve(len*2);
+  //tsp.save("test.txt");
+
+  for (int i = 0;i<len+1;i++)
+  {
+      printf("%02.0f %02.0f\n",tsp.x[i],tsp.y[i]);
+      res.x.push_back(tsp.x[i]);
+      res.y.push_back(tsp.y[i]);
+  }
+//  res.x = req.x;
+//  res.y = req.y;
+  res.sucess = true;
+  ROS_INFO("sending back response: ");
+  return true;
+}
+
+
+int main(int argc, char **argv)
+{
+//    float x[500];
+//    float y[500];
+//    int len = 0;
+
+    ros::init(argc, argv, "get_tsp_server");
+    ros::NodeHandle n;
+
+
+    ros::ServiceServer service = n.advertiseService("get_tsp", plan_tsp);
+    ROS_INFO("Ready to plan tsp");
+    ros::spin();
+
     return 0;
+
 }

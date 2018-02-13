@@ -6,6 +6,9 @@
 #include <string.h>
 #include <math.h>
 
+
+
+
 /**
 @author Tom Krajnik
 */
@@ -21,6 +24,7 @@ public:
     void save(const char* name);
     float *x;
     float *y;
+
 
 private:
     /*reverse part of the circuit (from the a-th to the b-th node)*/

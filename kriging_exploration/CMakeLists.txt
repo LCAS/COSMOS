@@ -2,9 +2,10 @@ cmake_minimum_required(VERSION 2.8.3)
 project(kriging_exploration)
 
 find_package(catkin REQUIRED COMPONENTS
-  message_generation
   rospy
+  roscpp
   std_msgs
+  message_generation
 )
 
 
@@ -19,11 +20,11 @@ catkin_python_setup()
 #)
 
 ## Generate services in the 'srv' folder
-# add_service_files(
-#   FILES
-#   Service1.srv
+add_service_files(
+   FILES
+   GetTsp.srv
 #   Service2.srv
-# )
+)
 
 ## Generate actions in the 'action' folder
 # add_action_files(
@@ -33,10 +34,10 @@ catkin_python_setup()
 # )
 
 ## Generate added messages and services with any dependencies listed here
-# generate_messages(
-#   DEPENDENCIES
-#   std_msgs
-# )
+generate_messages(
+   DEPENDENCIES
+   std_msgs
+)
 
 
 catkin_package(
@@ -53,13 +54,13 @@ catkin_package(
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 include_directories(
-# include
+  include
   ${catkin_INCLUDE_DIRS}
 )
 
 
 add_executable(tsp_service src/tsp.cpp)
-  
-
+target_link_libraries(tsp_service ${catkin_LIBRARIES})
+add_dependencies(tsp_service kriging_exploration_generate_messages_cpp)
 
 
