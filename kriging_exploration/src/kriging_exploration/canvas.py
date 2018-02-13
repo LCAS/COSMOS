@@ -99,6 +99,18 @@ class ViewerCanvas(object):
         cv2.line(self.image, (int(mx0), int(my0)), (int(mx1), int(my1)), colour, thickness=thickness)
     
     
+    
+    def draw_line(self, line, colour, size=3, thickness=2, alpha=128):
+        mx1, my1 =self._coord2pix(line[0])
+        mx2, my2 =self._coord2pix(line[1])                
+        b = [int(255*x) for x in mcolors.hex2color(mcolors.cnames[colour])]
+        b = b[::-1]
+        b.append(alpha)
+        
+        cv2.circle(self.image, (int(mx1), int(my1)), size, b, thickness)
+        cv2.circle(self.image, (int(mx2), int(my2)), size, b, thickness)
+        cv2.line(self.image, (int(mx1), int(my1)), (int(mx2), int(my2)), b, thickness=thickness)
+    
 
     def draw_legend(self, vmin, vmax, colmap, title="OUTPUTS"):
         font = cv2.FONT_HERSHEY_SIMPLEX

@@ -590,8 +590,8 @@ class Explorator(KrigingVisualiser):
             self.exploration_canvas.draw_waypoints(self.explo_plan.targets, (255,128,128,2), thickness=2)
             self.exploration_canvas.draw_plan(self.explo_plan.route, (0,128,128,2), thickness=1)
             self.redraw()
-            xnames = [x.name for x in self.explo_plan.route]
-            print xnames
+            #xnames = [x.name for x in self.explo_plan.route]
+            #print xnames
         elif k == ord('g'):
             if len(self.explo_plan.route) >0:
                 gg=self.explo_plan.route[0]
@@ -636,6 +636,51 @@ class Explorator(KrigingVisualiser):
 
         elif k == ord('p'):    
             self.pause_exp= not self.pause_exp
+            
+        elif k == ord('c'):
+            print self.grid.limits
+            print "Area: ", self.grid.calculate_area(self.grid.limits)
+            colours=['white','red','yellow','green','blue']
+
+            self.grid.divide_area(2)
+          
+            
+
+            colco=0
+            for j in self.grid.areas:
+                for i in j:
+                    self.limits_canvas.draw_coordinate(i,colours[colco])
+                colco+=1
+                                
+
+            for i in self.grid.div_v_lines:
+                self.limits_canvas.draw_line(i, 'blue')
+                colco+=1
+            
+            ll=[]
+            for i in range(len(self.grid.areas[0])-1):
+                ll.append((self.grid.areas[0][i], self.grid.areas[0][i+1])) 
+            ll.append((self.grid.areas[0][-1], self.grid.areas[0][0])) 
+
+            rl=[]
+            for i in range(len(self.grid.areas[1])-1):
+                rl.append((self.grid.areas[1][i], self.grid.areas[1][i+1]))
+
+            rl.append((self.grid.areas[1][-1], self.grid.areas[1][0]))
+
+            for i in ll:
+                self.limits_canvas.draw_line(i, 'yellow')
+            
+
+
+            for i in rl:
+                self.limits_canvas.draw_line(i, 'green')
+            
+
+            self.redraw()
+            
+
+    
     
     def signal_handler(self, signal, frame):
         self.running = False

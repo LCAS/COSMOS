@@ -1,12 +1,13 @@
 import utm
 import yaml
+import rospy
 import random
 
 import numpy as np
 
 from map_coords import MapCoords
-
-
+from kriging_exploration.srv import GetTsp
+import matplotlib.pyplot as plt
 
 def line_intersection(l1, l2):
 #    line1 = [l1[0].coord.northing, l1[0].coord.easting, l1[1].coord.northing, l1[1].coord.easting]
@@ -93,17 +94,25 @@ class ExplorationPlan(object):
         groute, gdist = self._create_greedy_plan(initial_waypoint)
         rroute, rdist = self._create_random_plan(initial_waypoint)
         
-        
         if gdist < rdist:
             route = groute
+            dist = gdist
         else:
             route = rroute
+            dist = rdist
         
-        route, dist = self.optimise_route(route)
+        
+        
+        #route, dist = self.optimise_route(route)
         self.route = route
         self.route.pop(0)
+
+        troute, tdist = self._get_tsp_plan(initial_waypoint)
         
-        print "Greedy: " + str(gdist) + " Random: " + str(rdist) + " Optimised: " + str(dist)
+        if tdist<dist:
+            self.route = troute
+        
+        print "Greedy: " + str(gdist) + " Random: " + str(rdist) + " Optimised: " + str(dist) + " Tom: " + str (tdist)
 
         
     
@@ -187,7 +196,43 @@ class ExplorationPlan(object):
             jnd+=1
         return swp
             
-    
+            
+    def _get_tsp_plan(self, initial_waypoint):
+        route=[]
+        coordsx=[]
+        coordsy=[]
+
+        for i in self.targets:
+            if i.name != initial_waypoint:
+                coordsx.append(float(i.ind[0]))
+                coordsy.append(float(i.ind[1]))
+            else:
+                coordsx.insert(0,float(i.ind[0]))
+                coordsy.insert(0,float(i.ind[1]))
+
+        #print coordsx
+        #print coordsy
+        
+        print "Waiting for Service!!!!!"
+        rospy.wait_for_service('get_tsp')
+        try:
+            get_tsp = rospy.ServiceProxy('get_tsp', GetTsp)
+            resp1 = get_tsp(coordsx, coordsy)
+            #print resp1
+        except rospy.ServiceException, e:
+            print "Service call failed: %s"%e
+
+        plt.plot(resp1.x, resp1.y, '-o')
+        plt.savefig('poo.png')
+        
+        #print "Remember initial wP: ", initial_waypoint
+        for i in range(len(resp1.x)):
+            for j in self.targets:
+                if (resp1.x[i],resp1.y[i]) == j.ind:
+                    route.append(j)
+                    #print j.name
+                    break
+        return route, self.get_route_dist(route)
         
     
     def _create_random_plan(self, initial_waypoint):

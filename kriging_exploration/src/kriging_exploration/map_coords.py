@@ -24,6 +24,18 @@ class MapCoords(object):
         orient = math.atan2(dnorth, deast) * 180/math.pi
         return dist, orient
 
+
+    def __mod__(self, other):
+        dnorth = ((self.northing + other.northing)/2)
+        deast = ((self.easting + other.easting)/2)
+        a = utm.to_latlon(deast, dnorth, self.zone_number, self.zone_letter)
+        return MapCoords(a[0], a[1])        
+        
+        print dnorth, deast
+        midpoint = self._get_rel_point(deast, dnorth)
+        return midpoint
+
+
     def __repr__(self):
         a = dir(self)
         b = []
