@@ -31,9 +31,9 @@ class MapCoords(object):
         a = utm.to_latlon(deast, dnorth, self.zone_number, self.zone_letter)
         return MapCoords(a[0], a[1])        
         
-        print dnorth, deast
-        midpoint = self._get_rel_point(deast, dnorth)
-        return midpoint
+#        print dnorth, deast
+#        midpoint = self._get_rel_point(deast, dnorth)
+#        return midpoint
 
 
     def __repr__(self):

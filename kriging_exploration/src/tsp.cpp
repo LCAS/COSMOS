@@ -161,7 +161,7 @@ bool plan_tsp(kriging_exploration::GetTsp::Request  &req, kriging_exploration::G
 
   ROS_INFO("sending array len: %d", len);
   CTSP tsp(x, y,len);
-  tsp.solve(len*2);
+  tsp.solve(len*4);
   //tsp.save("test.txt");
 
   for (int i = 0;i<len+1;i++)

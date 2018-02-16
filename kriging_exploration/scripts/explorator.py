@@ -302,7 +302,7 @@ class Explorator(KrigingVisualiser):
                 
             for i in self.topo_map.waypoints:
                 if (cy,cx) == i.ind:
-                    print i.name#, i.coord
+                    print i.name, i.coord.easting, i.coord.northing
                     i.visited= True
                     self.visited_wp.append(i)
                     self.grid_canvas.draw_waypoints(self.topo_map.waypoints, (0,255,0,2), thickness=1)
@@ -640,43 +640,63 @@ class Explorator(KrigingVisualiser):
         elif k == ord('c'):
             print self.grid.limits
             print "Area: ", self.grid.calculate_area(self.grid.limits)
-            colours=['white','red','yellow','green','blue']
+            print "Area of Area: ", self.grid.area.area_size
+            colours=['magenta','cyan', 'grey','white','red','yellow','green','blue']
 
-            self.grid.divide_area(2)
-          
+            for i in self.grid.area.limit_lines:
+                self.limits_canvas.draw_line(i, 'white')
             
-
-            colco=0
-            for j in self.grid.areas:
-                for i in j:
-                    self.limits_canvas.draw_coordinate(i,colours[colco])
-                colco+=1
-                                
-
-            for i in self.grid.div_v_lines:
-                self.limits_canvas.draw_line(i, 'blue')
-                colco+=1
+            areas2=[]
+            areas = self.grid.area.split_v_area(15)
             
-            ll=[]
-            for i in range(len(self.grid.areas[0])-1):
-                ll.append((self.grid.areas[0][i], self.grid.areas[0][i+1])) 
-            ll.append((self.grid.areas[0][-1], self.grid.areas[0][0])) 
+            nc=0
+            for j in areas:
+##                print j.area_size
+##                for i in j.limit_lines:
+##                    self.limits_canvas.draw_line(i, colours[nc], thickness=1)
+##                if nc < len(colours)-1:
+##                    nc+=1
+##                else:
+##                    nc=0
+                aa = j.split_h_area(12)
+                for h in aa:
+                    areas2.append(h)
 
-            rl=[]
-            for i in range(len(self.grid.areas[1])-1):
-                rl.append((self.grid.areas[1][i], self.grid.areas[1][i+1]))
+            nc=0
+            for j in areas2:
+                print j.area_size
+                for i in j.limit_lines:
+                    self.limits_canvas.draw_line(i, colours[nc], thickness=1)
+                if nc < len(colours)-1:
+                    nc+=1
+                else:
+                    nc=0
 
-            rl.append((self.grid.areas[1][-1], self.grid.areas[1][0]))
+                
+#            for i in left.limit_lines:
+#                self.limits_canvas.draw_line(i, 'blue')
 
-            for i in ll:
-                self.limits_canvas.draw_line(i, 'yellow')
+            #divcoords = self.grid.area.get_div_h_lines(1)
+#            
+#            nc=0
+#            for i in divcoords:
+#                self.limits_canvas.draw_line(i, colours[nc])
+#                nc+=1
+#                if nc < len(colours)-1:
+#                    nc+=1
+#                else:
+#                    nc=0
+#
+#
+#            for i in divi:
+#                self.limits_canvas.draw_line(i, colours[nc], thickness=1)
+#                nc+=1
+#                if nc < len(colours)-1:
+#                    nc+=1
+#                else:
+#                    nc=0            
             
-
-
-            for i in rl:
-                self.limits_canvas.draw_line(i, 'green')
             
-
             self.redraw()
             
 

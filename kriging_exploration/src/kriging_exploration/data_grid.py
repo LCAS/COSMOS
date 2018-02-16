@@ -6,6 +6,7 @@ import numpy as np
 from map_coords import MapCoords
 from krigging_data import KriggingDataPoint
 from krigging_data import KriggingData
+from map_polyareas import MapPolyareas
 
 
 def line_intersection(line1, line2):
@@ -147,7 +148,7 @@ class DataGrid(object):
             self.limit_lines.append((self.limits[i], self.limits[i+1]))
         
         self.limit_lines.append((self.limits[len(self.limits)-1], self.limits[0]))
-            
+        self.area = MapPolyareas(self.limits)
 
     def calculate_area(self, corner_coords):
         ncoords=[]
