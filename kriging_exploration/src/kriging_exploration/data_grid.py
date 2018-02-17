@@ -9,31 +9,31 @@ from krigging_data import KriggingData
 from map_polyareas import MapPolyareas
 
 
-def line_intersection(line1, line2):
-    #print line1
-    #print line2    
-    
-    xdiff = (line1[0][0] - line1[1][0], line2[0][0] - line2[1][0])
-    ydiff = (line1[0][1] - line1[1][1], line2[0][1] - line2[1][1]) #Typo was here
-
-    def det(a, b):
-        return a[0] * b[1] - a[1] * b[0]
-
-    div = det(xdiff, ydiff)
-    if div == 0:
-       return False, (-1, -1)
-
-    d = (det(*line1), det(*line2))
-    x = det(d, xdiff) / div
-    y = det(d, ydiff) / div
-    
-    if x>= min(line1[0][0], line1[1][0]) and x <= max(line1[0][0], line1[1][0]):
-        if x>= min(line2[0][0], line2[1][0]) and x <= max(line2[0][0], line2[1][0]):
-            if  y>= min(line1[0][1], line1[1][1]) and y <= max(line1[0][1], line1[1][1]):
-                if  y>= min(line2[0][1], line2[1][1]) and y <= max(line2[0][1], line2[1][1]):
-                    return True, (x, y)
-    
-    return False, (-1, -1)
+#def line_intersection(line1, line2):
+#    #print line1
+#    #print line2    
+#    
+#    xdiff = (line1[0][0] - line1[1][0], line2[0][0] - line2[1][0])
+#    ydiff = (line1[0][1] - line1[1][1], line2[0][1] - line2[1][1]) #Typo was here
+#
+#    def det(a, b):
+#        return a[0] * b[1] - a[1] * b[0]
+#
+#    div = det(xdiff, ydiff)
+#    if div == 0:
+#       return False, (-1, -1)
+#
+#    d = (det(*line1), det(*line2))
+#    x = det(d, xdiff) / div
+#    y = det(d, ydiff) / div
+#    
+#    if x>= min(line1[0][0], line1[1][0]) and x <= max(line1[0][0], line1[1][0]):
+#        if x>= min(line2[0][0], line2[1][0]) and x <= max(line2[0][0], line2[1][0]):
+#            if  y>= min(line1[0][1], line1[1][1]) and y <= max(line1[0][1], line1[1][1]):
+#                if  y>= min(line2[0][1], line2[1][1]) and y <= max(line2[0][1], line2[1][1]):
+#                    return True, (x, y)
+#    
+#    return False, (-1, -1)
 
 
 def PolyArea(x,y):
@@ -43,7 +43,8 @@ class DataGrid(object):
     def __init__(self, limits_file, cell_size):
         self.limits=[]
         self.limit_lines=[] # Limit side lines
-        
+        self.area_splits=[]
+        self.area_splits_coords=[]
         self.div_v_lines=[] # Vertical division lines
         self.areas=[]        
         
@@ -150,6 +151,8 @@ class DataGrid(object):
         self.limit_lines.append((self.limits[len(self.limits)-1], self.limits[0]))
         self.area = MapPolyareas(self.limits)
 
+
+
     def calculate_area(self, corner_coords):
         ncoords=[]
         ecoords=[]
@@ -162,103 +165,15 @@ class DataGrid(object):
         return area
 
 
-    def _get_intersection(self, line1, line2):
-        
-        l1=[[line1[0].northing, line1[0].easting], [line1[1].northing, line1[1].easting]]
-        l2=[[line2[0].northing, line2[0].easting], [line2[1].northing, line2[1].easting]]
-        
-        res, point = line_intersection(l1,l2)
-        
-        if res:
-            #print point, line1[0]
-            a = utm.to_latlon(point[1], point[0], line1[0].zone_number, line1[0].zone_letter)
-            return MapCoords(a[0], a[1])
-        else:
-            return None
+    def _split_area(self, vertical_splits, horizontal_splits):
+        areas = self.area.split_v_area(vertical_splits)
 
-    def _sort_corners(self, polygon):
-        polygon2=[] #polygon[:]
-        angles = []
-        mde = np.average([x.easting for x in polygon])
-        mdn = np.average([x.northing for x in polygon])
+        for j in areas:
+            aa = j.split_h_area(horizontal_splits)
+            for h in aa:
+                self.area_splits.append(h)
 
-        a = utm.to_latlon(mde, mdn, polygon[0].zone_number, polygon[0].zone_letter)
-        mda = MapCoords(a[0], a[1])
-        
-        for i in polygon:
-            rr= mda - i
-            angles.append(rr[1]+180)
-            
-        angles2=angles[:]
-        angles.sort()        
-
-        for i in angles:
-            ind = angles2.index(i)
-            polygon2.append(polygon[ind])
-        
-        
-        
-        return polygon2
-        
-        
-        
-
-
-    def divide_area(self, number):
-        print "finding midpoints"
-        blah = self.swc % self.sec
-        blah2 = self.nwc % self.nec
-
-        blah = blah._get_rel_point(0, -10)
-        blah2 = blah2._get_rel_point(0, 10)        
-        
-        diviline = (blah, blah2)
-        
-
-        error=1000
-        count = 0
-                
-        while abs(error)>10 and count <50:
-            left=[]
-            right=[]
-            
-            for i in self.limits:
-                if i.easting > blah.easting:
-                    left.append(i)
-                else:
-                    right.append(i)
-            
-            for i in self.limit_lines:
-                point = self._get_intersection(diviline, i)
-                if point:
-                    left.append(point)
-                    right.append(point)
-
-            left = self._sort_corners(left)
-            
-            right = self._sort_corners(right)
-            
-
-            larea = self.calculate_area(left)
-            rarea = self.calculate_area(right)
-            
-            error = (rarea-larea)
-            print count, " L AREA: ", larea, " R AREA: ", rarea, " Error: ", error
-            
-            if error > 0:
-                blah = blah._get_rel_point(-1, 0)
-                blah2 = blah2._get_rel_point(-1, 0)
-            else:
-                blah = blah._get_rel_point(1, 0)
-                blah2 = blah2._get_rel_point(1, 0)
-            
-            count+=1
-            diviline = (blah, blah2)
-            
-        self.div_v_lines.append(diviline)
-        self.areas.append(right)
-        self.areas.append(left)
-        
+        self.area_splits_coords = [x.centre for x in self.area_splits]
 
 
 
@@ -336,3 +251,104 @@ class DataGrid(object):
         self.corners.append(corner3)        
 
         return np.ceil(maxeast-mineast), np.ceil(maxnorth-minnorth)
+
+
+
+#    def _get_intersection(self, line1, line2):
+#        
+#        l1=[[line1[0].northing, line1[0].easting], [line1[1].northing, line1[1].easting]]
+#        l2=[[line2[0].northing, line2[0].easting], [line2[1].northing, line2[1].easting]]
+#        
+#        res, point = line_intersection(l1,l2)
+#        
+#        if res:
+#            #print point, line1[0]
+#            a = utm.to_latlon(point[1], point[0], line1[0].zone_number, line1[0].zone_letter)
+#            return MapCoords(a[0], a[1])
+#        else:
+#            return None
+
+#    def _sort_corners(self, polygon):
+#        polygon2=[] #polygon[:]
+#        angles = []
+#        mde = np.average([x.easting for x in polygon])
+#        mdn = np.average([x.northing for x in polygon])
+#
+#        a = utm.to_latlon(mde, mdn, polygon[0].zone_number, polygon[0].zone_letter)
+#        mda = MapCoords(a[0], a[1])
+#        
+#        for i in polygon:
+#            rr= mda - i
+#            angles.append(rr[1]+180)
+#            
+#        angles2=angles[:]
+#        angles.sort()        
+#
+#        for i in angles:
+#            ind = angles2.index(i)
+#            polygon2.append(polygon[ind])
+#        
+#        
+#        
+#        return polygon2
+        
+        
+        
+
+
+#    def divide_area(self, number):
+#        print "finding midpoints"
+#        blah = self.swc % self.sec
+#        blah2 = self.nwc % self.nec
+#
+#        blah = blah._get_rel_point(0, -10)
+#        blah2 = blah2._get_rel_point(0, 10)        
+#        
+#        diviline = (blah, blah2)
+#        
+#
+#        error=1000
+#        count = 0
+#                
+#        while abs(error)>10 and count <50:
+#            left=[]
+#            right=[]
+#            
+#            for i in self.limits:
+#                if i.easting > blah.easting:
+#                    left.append(i)
+#                else:
+#                    right.append(i)
+#            
+#            for i in self.limit_lines:
+#                point = self._get_intersection(diviline, i)
+#                if point:
+#                    left.append(point)
+#                    right.append(point)
+#
+#            left = self._sort_corners(left)
+#            
+#            right = self._sort_corners(right)
+#            
+#
+#            larea = self.calculate_area(left)
+#            rarea = self.calculate_area(right)
+#            
+#            error = (rarea-larea)
+#            print count, " L AREA: ", larea, " R AREA: ", rarea, " Error: ", error
+#            
+#            if error > 0:
+#                blah = blah._get_rel_point(-1, 0)
+#                blah2 = blah2._get_rel_point(-1, 0)
+#            else:
+#                blah = blah._get_rel_point(1, 0)
+#                blah2 = blah2._get_rel_point(1, 0)
+#            
+#            count+=1
+#            diviline = (blah, blah2)
+#            
+#        self.div_v_lines.append(diviline)
+#        self.areas.append(right)
+#        self.areas.append(left)
+        
+

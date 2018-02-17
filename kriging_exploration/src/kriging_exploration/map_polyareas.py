@@ -36,6 +36,21 @@ def getPArea(x,y):
 
 
 
+def centroid_for_polygon(polygon, area):
+    imax = len(polygon) - 1
+
+    result_x = 0
+    result_y = 0
+    for i in range(0,imax):
+        result_x += (polygon[i]['x'] + polygon[i+1]['x']) * ((polygon[i]['x'] * polygon[i+1]['y']) - (polygon[i+1]['x'] * polygon[i]['y']))
+        result_y += (polygon[i]['y'] + polygon[i+1]['y']) * ((polygon[i]['x'] * polygon[i+1]['y']) - (polygon[i+1]['x'] * polygon[i]['y']))
+    result_x += (polygon[imax]['x'] + polygon[0]['x']) * ((polygon[imax]['x'] * polygon[0]['y']) - (polygon[0]['x'] * polygon[imax]['y']))
+    result_y += (polygon[imax]['y'] + polygon[0]['y']) * ((polygon[imax]['x'] * polygon[0]['y']) - (polygon[0]['x'] * polygon[imax]['y']))
+    result_x /= (area * 6.0)
+    result_y /= (area * 6.0)
+
+    return {'x': result_x, 'y': result_y}
+
 class MapPolyareas(object):
 
     def __init__(self, corners):
@@ -43,6 +58,35 @@ class MapPolyareas(object):
         self.make_lines()
         self.width, self.height = self._get_boundbox_corners()
         self.area_size = self._calculate_area(self.corners)
+        self._get_poly_centre()
+
+
+    def _get_poly_centre(self):
+        pol=[]
+        for i in self.corners:
+            d={}
+            d['x']=i.easting
+            d['y']=i.northing
+            pol.append(d)
+        
+        zone_number = self.corners[0].zone_number
+        zone_letter = self.corners[0].zone_letter
+
+        centreI = centroid_for_polygon(pol, self.area_size)        
+        centreI = utm.to_latlon(centreI['x'], centreI['y'], zone_number, zone_letter=zone_letter)
+        self.centre = MapCoords(float(centreI[0]),float(centreI[1]))
+        
+        
+    def _calculate_area(self, corner_coords):
+        ncoords=[]
+        ecoords=[]
+        
+        for i in corner_coords:
+            ncoords.append(i.northing)
+            ecoords.append(i.easting)
+        
+        area = getPArea(np.asarray(ncoords),np.asarray(ecoords))
+        return area
 
     def _get_boundbox_corners(self):
         
@@ -76,16 +120,7 @@ class MapPolyareas(object):
         self.limit_lines.append((self.corners[len(self.corners)-1], self.corners[0]))
 
 
-    def _calculate_area(self, corner_coords):
-        ncoords=[]
-        ecoords=[]
-        
-        for i in corner_coords:
-            ncoords.append(i.northing)
-            ecoords.append(i.easting)
-        
-        area = getPArea(np.asarray(ncoords),np.asarray(ecoords))
-        return area
+
 
 
     def _get_intersection(self, line1, line2):

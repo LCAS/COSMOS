@@ -78,7 +78,8 @@ class simulator(object):
         self.satellite = SatelliteImage(lat_deg, lon_deg, zoom, size)
         self.grid = DataGrid('limits.coords', cell_size)
 
-        self.load_groundtruth('Iains2.yaml')
+        #self.load_groundtruth('Iains2.yaml')
+        self.load_groundtruth('big_testing.yaml')
         self.krieg_all_mmodels()
 
 
@@ -361,5 +362,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
     
     rospy.init_node('kriging_simulator')
-    simulator(53.261685, -0.525158, 17, 640, args.cell_size)
+
+    simulator(53.261576, -0.526648, 17, 640, args.cell_size)  #Half cosmos field
+#    simulator(53.261685, -0.525158, 17, 640, args.cell_size)  #Full cosmos field
 

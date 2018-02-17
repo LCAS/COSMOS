@@ -646,25 +646,12 @@ class Explorator(KrigingVisualiser):
             for i in self.grid.area.limit_lines:
                 self.limits_canvas.draw_line(i, 'white')
             
-            areas2=[]
-            areas = self.grid.area.split_v_area(15)
+            self.grid._split_area(5,7)            
             
             nc=0
-            for j in areas:
-##                print j.area_size
-##                for i in j.limit_lines:
-##                    self.limits_canvas.draw_line(i, colours[nc], thickness=1)
-##                if nc < len(colours)-1:
-##                    nc+=1
-##                else:
-##                    nc=0
-                aa = j.split_h_area(12)
-                for h in aa:
-                    areas2.append(h)
-
-            nc=0
-            for j in areas2:
+            for j in self.grid.area_splits:
                 print j.area_size
+                self.limits_canvas.draw_coordinate(j.centre, 'crimson', size=3, thickness=2)
                 for i in j.limit_lines:
                     self.limits_canvas.draw_line(i, colours[nc], thickness=1)
                 if nc < len(colours)-1:
@@ -672,31 +659,23 @@ class Explorator(KrigingVisualiser):
                 else:
                     nc=0
 
-                
-#            for i in left.limit_lines:
-#                self.limits_canvas.draw_line(i, 'blue')
-
-            #divcoords = self.grid.area.get_div_h_lines(1)
-#            
-#            nc=0
-#            for i in divcoords:
-#                self.limits_canvas.draw_line(i, colours[nc])
-#                nc+=1
-#                if nc < len(colours)-1:
-#                    nc+=1
-#                else:
-#                    nc=0
-#
-#
-#            for i in divi:
-#                self.limits_canvas.draw_line(i, colours[nc], thickness=1)
-#                nc+=1
-#                if nc < len(colours)-1:
-#                    nc+=1
-#                else:
-#                    nc=0            
-            
-            
+            sb=[]
+            for i in self.grid.area_splits_coords:
+                (y, x) = self.grid.get_cell_inds_from_coords(i)
+                sb.append((x,y))
+            #self.limits_canvas.draw_coordinate(self.grid.area.centre, 'crimson')
+            print sb
+           
+            print self.topo_map.waypoints[0].ind
+            plan=[]
+            for i in sb:
+                for j in self.topo_map.waypoints:
+                    if i == j.ind:
+                        plan.append(j)
+                        #break
+                    
+            sc = [xb.name for xb in plan]
+            print sc, len(plan), len(sb)
             self.redraw()
             
 
@@ -726,6 +705,7 @@ if __name__ == '__main__':
     #Explorator(53.261685, -0.527158, 16, 640, args.cell_size)
     
     #Explorator(53.267213, -0.533420, 17, 640, args)  #Football Field
-    Explorator(53.261685, -0.525158, 17, 640, args) #COSMOS Field
+    Explorator(53.261576, -0.526648, 17, 640, args)  #Half cosmos field
+    #Explorator(53.261685, -0.525158, 17, 640, args) #COSMOS Field
 
     

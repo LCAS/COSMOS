@@ -121,20 +121,14 @@ class ViewerCanvas(object):
             vmax = vmax + 500
             vmin = vmin - 500
             step = float(vmax - vmin)/float(600-40)
-            
-
-        #vp = range(int(np.floor(vmin)),int(np.ceil(vmax)), int(np.ceil(step)))
-        #print len(vp)        
-
-        #cv2.rectangle(self.image, (int(0), int(555)), (int(640), int(605)), (255,255,255,255), thickness=-1)
-        
+                   
         if step>1.0:
             ind = 0
             while ind < 560:
 #                print int(vmin+(ind*step))
                 a= colmap.to_rgba(int(vmin+(ind*step)))                
                 b= (int(a[2]*255), int(a[1]*255), int(a[0]*255),int(a[3]*255))                
-                cv2.rectangle(self.image, (int(ind+40), int(580)), (int(ind+1+40), int(600)), b , thickness=-1)
+                cv2.rectangle(self.image, (int(ind+40), int(510)), (int(ind+1+40), int(530)), b , thickness=-1)
                 ind+=1
         else:
             step=1/step
@@ -143,23 +137,20 @@ class ViewerCanvas(object):
 #                print int(vmin+(ind*step))
                 a= colmap.to_rgba(int(vmin+(ind/step)))                
                 b= (int(a[2]*255), int(a[1]*255), int(a[0]*255),int(a[3]*255))                
-                cv2.rectangle(self.image, (int(ind+40), int(580)), (int(ind+1+40), int(600)), b , thickness=-1)
+                cv2.rectangle(self.image, (int(ind+40), int(510)), (int(ind+1+40), int(530)), b , thickness=-1)
                 ind+=1
 
         a= colmap.to_rgba(int(vmin))
         b= (int(a[2]*255), int(a[1]*255), int(a[0]*255), int(a[3]*250))
-        cv2.putText(self.image, str(np.floor(vmin)) + " Kpa", (int(5), int(575)), font, 0.6, b, 2)
+        cv2.putText(self.image, str(np.floor(vmin)) + " Kpa", (int(5), int(500)), font, 0.6, b, 2)
         a= colmap.to_rgba(int(vmax))
         b= (int(a[2]*255), int(a[1]*255), int(a[0]*255), int(a[3]*250))
         tsz=cv2.getTextSize(str(np.ceil(vmax)) + " Kpa", font, 0.6, 2)
-        cv2.putText(self.image, str(np.ceil(vmax)) + " Kpa", (int(640)-tsz[0][0]-5, int(575)), font, 0.6, b, 2)
-        cv2.putText(self.image, title, (270,20), font, 0.8, (200, 200, 200,255), 2)
+        cv2.putText(self.image, str(np.ceil(vmax)) + " Kpa", (int(640)-tsz[0][0]-5, int(500)), font, 0.6, b, 2)
+        cv2.putText(self.image, title, (240,80), font, 0.8, (200, 200, 200,255), 2)
     
     
     def put_text(self,text,colour=(200,200,200,200)):
         font = cv2.FONT_HERSHEY_SIMPLEX
-        cv2.putText(self.image, text, (int(520), int(20)), font, 0.8, colour, 2)
-        
-        
-        
+        cv2.putText(self.image, text, (int(520), int(80)), font, 0.8, colour, 2)
         
