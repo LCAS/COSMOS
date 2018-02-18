@@ -21,6 +21,7 @@ import actionlib
 
 
 from cosmos_msgs.msg import KrigInfo
+from cosmos_msgs.srv import CompareModels
 import kriging_exploration.map_coords
 import std_msgs.msg
 
@@ -78,7 +79,20 @@ class Explorator(KrigingVisualiser):
         self.topo_map= TopoMap(self.grid)
         self.visited_wp=[]
 
-        self.explo_plan = ExplorationPlan(self.topo_map, args.initial_waypoint, args.initial_percent)
+        explo_type = args.area_coverage_type
+        
+        if explo_type=='area_split':
+            self.grid._split_area(4,6)
+            sb=[]
+            for i in self.grid.area_splits_coords:
+                (y, x) = self.grid.get_cell_inds_from_coords(i)
+                sb.append((x,y))
+            self.explo_plan = ExplorationPlan(self.topo_map, args.initial_waypoint, args.initial_percent, ac_model=explo_type, ac_coords=sb)
+        else:
+            self.explo_plan = ExplorationPlan(self.topo_map, args.initial_waypoint, args.initial_percent)
+        
+            
+            
         self.navigating = False
         self.pause_exp = False
         self.exploring = 0
@@ -587,8 +601,8 @@ class Explorator(KrigingVisualiser):
             self.grid_canvas.draw_waypoints(self.visited_wp, (0,0,255,2), thickness=1)
             self.redraw()
         elif k == ord('e'):
-            self.exploration_canvas.draw_waypoints(self.explo_plan.targets, (255,128,128,2), thickness=2)
-            self.exploration_canvas.draw_plan(self.explo_plan.route, (0,128,128,2), thickness=1)
+            self.exploration_canvas.draw_waypoints(self.explo_plan.targets, (255,200,128,255), thickness=3)
+            self.exploration_canvas.draw_plan(self.explo_plan.route, 'cyan', thickness=1)
             self.redraw()
             #xnames = [x.name for x in self.explo_plan.route]
             #print xnames
@@ -642,41 +656,37 @@ class Explorator(KrigingVisualiser):
             print "Area: ", self.grid.calculate_area(self.grid.limits)
             print "Area of Area: ", self.grid.area.area_size
             colours=['magenta','cyan', 'grey','white','red','yellow','green','blue']
-
-            for i in self.grid.area.limit_lines:
-                self.limits_canvas.draw_line(i, 'white')
-            
-            self.grid._split_area(5,7)            
             
             nc=0
             for j in self.grid.area_splits:
                 print j.area_size
-                self.limits_canvas.draw_coordinate(j.centre, 'crimson', size=3, thickness=2)
+                #self.limits_canvas.draw_coordinate(j.centre, 'crimson', size=3, thickness=2)
                 for i in j.limit_lines:
-                    self.limits_canvas.draw_line(i, colours[nc], thickness=1)
+                    #self.limits_canvas.draw_line(i, colours[nc], thickness=1)
+                    self.limits_canvas.draw_line(i, 'white', thickness=1)
                 if nc < len(colours)-1:
                     nc+=1
                 else:
                     nc=0
 
-            sb=[]
-            for i in self.grid.area_splits_coords:
-                (y, x) = self.grid.get_cell_inds_from_coords(i)
-                sb.append((x,y))
-            #self.limits_canvas.draw_coordinate(self.grid.area.centre, 'crimson')
-            print sb
-           
-            print self.topo_map.waypoints[0].ind
-            plan=[]
-            for i in sb:
-                for j in self.topo_map.waypoints:
-                    if i == j.ind:
-                        plan.append(j)
-                        #break
-                    
-            sc = [xb.name for xb in plan]
-            print sc, len(plan), len(sb)
             self.redraw()
+            
+        elif k== ord('r'):
+            #diff = (self.grid.models[1].output - self.grid.models[0].output)
+            #print np.mean(diff), np.std(diff), diff.dtype
+            shapeo = self.grid.models[0].output.shape
+            vals = np.reshape(self.grid.models[0].output, -1)
+            
+            print vals
+            print "Waiting for Service"
+            rospy.wait_for_service('/compare_model')
+            try:
+                print "going for it"
+                compare_serv = rospy.ServiceProxy('/compare_model', CompareModels)
+                resp1 = compare_serv('kriging', 0, shapeo[0], shapeo[1], vals.tolist())
+                print resp1
+            except rospy.ServiceException, e:
+                print "Service call failed: %s"%e            
             
 
     
@@ -699,6 +709,8 @@ if __name__ == '__main__':
                         help="Percentage of cells to be explored on the initial plan")
     parser.add_argument("--initial_waypoint", type=str, default='WayPoint498',
                         help="Percentage of cells to be explored on the initial plan")
+    parser.add_argument("--area_coverage_type", type=str, default='area_split',
+                        help="Type of area coverage, random or area_split")
     args = parser.parse_args()
     
     rospy.init_node('kriging_exploration')

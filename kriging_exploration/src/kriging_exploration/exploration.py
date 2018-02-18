@@ -47,13 +47,18 @@ def line_intersection(l1, l2):
 
 
 class ExplorationPlan(object):
-    def __init__(self, topo_map, initial_waypoint, percentage=0.05):
+    def __init__(self, topo_map, initial_waypoint, percentage=0.05, ac_model='random', ac_coords=[]):
         self.max_iters=1000        
         self.targets=[]
         self.explored_wp=[]
         self.route=[]
         self.route_nodes=[]
-        self._generate_targets(topo_map, initial_waypoint, percentage)
+        if ac_model=='random':
+            self._generate_targets(topo_map, initial_waypoint, percentage)
+        else:
+            self._get_ac_targets(topo_map, initial_waypoint, ac_coords)
+            
+        #print self.targets
         self._get_plan(initial_waypoint)
         
         
@@ -62,6 +67,25 @@ class ExplorationPlan(object):
             if i.name == wp:
                 return i
                 
+    def _get_ac_targets(self, topo_map, initial_waypoint, ac_coords):
+        
+        for i in ac_coords:
+            for j in topo_map.waypoints:
+                if i == j.ind:
+                    self.targets.append(j)
+                    #break
+                    
+        found = False            
+        for i in self.targets:
+            if i.name == initial_waypoint:
+                found=True
+                break
+        
+        if not found:
+            for i in topo_map.waypoints:
+                if i.name == initial_waypoint:
+                    self.targets.append(i)
+                    break
     
     def _generate_targets(self, topo_map, initial_waypoint, percentage):
         ntargets = int(np.ceil(len(topo_map.waypoints))*percentage)
@@ -122,6 +146,8 @@ class ExplorationPlan(object):
         
         local_targs = self.targets[:]
         
+        print "-----------"
+        print route[-1]
         while len(local_targs) > 0:
             cn = route[-1]
             min_dist =10000.0

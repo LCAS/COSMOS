@@ -51,11 +51,16 @@ class ViewerCanvas(object):
             cv2.circle(self.image, (int(mx0), int(my0)), 2, colour, thickness=thickness)
 
 
-    def draw_plan(self, waypoints, colour, thickness=2):
+    def draw_plan(self, waypoints, colour, thickness=2, alpha=128):
+        b = [int(255*x) for x in mcolors.hex2color(mcolors.cnames[colour])]
+        b = b[::-1]
+        b.append(alpha)
+        
         for i in range(0, len(waypoints)-1):
             mx0, my0 =self._coord2pix(waypoints[i].coord)
             mx1, my1 =self._coord2pix(waypoints[i+1].coord)
-            cv2.line(self.image, (int(mx0), int(my0)), (int(mx1), int(my1)), colour, thickness=thickness)
+            cv2.line(self.image, (int(mx0), int(my0)), (int(mx1), int(my1)), b, thickness=thickness)
+        
         
     def draw_grid(self, grid, cell_size, colour, thickness=2):
         nx = len(grid)-1

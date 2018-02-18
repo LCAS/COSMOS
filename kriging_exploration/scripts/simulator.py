@@ -18,6 +18,7 @@ import std_msgs
 
 from cosmos_msgs.msg import KrigInfo
 from cosmos_msgs.msg import KrigMsg
+from cosmos_msgs.srv import CompareModels
 
 #import satellite
 from kriging_exploration.satellite import SatelliteImage
@@ -73,13 +74,17 @@ class simulator(object):
         rospy.Subscriber("/fix", NavSatFix, self.gps_callback)
         rospy.Subscriber('/request_scan', std_msgs.msg.String, self.scan_callback)
 
+        rospy.Service('/compare_model', CompareModels, self.model_comparison_cb)
+        
 
         print "Loading Satellite Image"
         self.satellite = SatelliteImage(lat_deg, lon_deg, zoom, size)
         self.grid = DataGrid('limits.coords', cell_size)
 
         #self.load_groundtruth('Iains2.yaml')
-        self.load_groundtruth('big_testing.yaml')
+        #self.load_groundtruth('bottom_testing.yaml')
+        self.load_groundtruth('upper_testing.yaml')
+        
         self.krieg_all_mmodels()
 
 
@@ -90,6 +95,11 @@ class simulator(object):
             k = cv2.waitKey(20) & 0xFF
             self._change_mode(k)
 
+    def model_comparison_cb(self, req):
+        print req.model_name, req.model_index, req.height, req.width
+        compm = np.reshape(np.asarray(req.vals), (req.height, req.width))
+        diff = self.grid.models[0].output-compm
+        return True, np.mean(diff), np.std(diff), np.var(diff)
 
     def load_groundtruth(self, filename):
         self.grid.load_data_from_yaml(filename)

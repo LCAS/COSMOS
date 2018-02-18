@@ -1,0 +1,10 @@
+string model_name   # Can be kriging, deviation, variance to compare layer to layer or 
+uint32 model_index  # If comparing layer to layer the index of the layer to be compared
+uint32 height       # shape of the matrix
+uint32 width
+float64[] vals      
+------
+bool sucess
+float32 error
+float32 std
+float32 var

@@ -58,10 +58,29 @@ class MapPolyareas(object):
         self.make_lines()
         self.width, self.height = self._get_boundbox_corners()
         self.area_size = self._calculate_area(self.corners)
+        self._get_poly_centroid()
         self._get_poly_centre()
-
-
+        
+    
     def _get_poly_centre(self):
+        x=[]
+        y=[]
+        for i in self.corners:
+            x.append(i.easting)
+            y.append(i.northing)
+
+        xc = np.average(np.asarray(x))
+        yc = np.average(np.asarray(y))
+        zone_number = self.corners[0].zone_number
+        zone_letter = self.corners[0].zone_letter
+
+        centreI = utm.to_latlon(xc, yc, zone_number, zone_letter=zone_letter)
+        self.centre = MapCoords(float(centreI[0]),float(centreI[1]))
+        
+        
+
+
+    def _get_poly_centroid(self):
         pol=[]
         for i in self.corners:
             d={}
@@ -74,7 +93,7 @@ class MapPolyareas(object):
 
         centreI = centroid_for_polygon(pol, self.area_size)        
         centreI = utm.to_latlon(centreI['x'], centreI['y'], zone_number, zone_letter=zone_letter)
-        self.centre = MapCoords(float(centreI[0]),float(centreI[1]))
+        self.centroid = MapCoords(float(centreI[0]),float(centreI[1]))
         
         
     def _calculate_area(self, corner_coords):
