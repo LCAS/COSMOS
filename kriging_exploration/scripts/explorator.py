@@ -58,9 +58,10 @@ def overlay_image_alpha(img, img_overlay):
     return show_image
 
 
-
 class Explorator(KrigingVisualiser):
 
+    #_w_shape=[(0, 16), (1, 17), (3, 17), (5, 16), (8, 15), (10, 15), (12, 14), (14, 13), (12, 12), (10, 11), (8, 11), (5, 10), (8, 9), (10, 9), (12, 8), (14, 7), (12, 6), (10, 5), (8, 5), (6, 4), (4, 3), (3, 2), (4, 1), (5, 0), (7, 0)]
+    _w_shape=[(16, 0), (17, 1), (17, 3), (16, 5), (15, 8), (15, 10), (14, 12), (13, 14), (12, 12), (11, 10), (11, 8), (10, 5), (9, 8), (9, 10), (8, 12), (7, 14), (6, 12), (5, 10), (5, 8), (4, 6), (3, 4), (2, 3), (1, 4), (0, 5), (0, 7)]
     def __init__(self, lat_deg, lon_deg, zoom, size, args):
         self.targets = []
 
@@ -88,9 +89,10 @@ class Explorator(KrigingVisualiser):
                 (y, x) = self.grid.get_cell_inds_from_coords(i)
                 sb.append((x,y))
             self.explo_plan = ExplorationPlan(self.topo_map, args.initial_waypoint, args.initial_percent, ac_model=explo_type, ac_coords=sb)
-        else:
+        elif explo_type=='random':
             self.explo_plan = ExplorationPlan(self.topo_map, args.initial_waypoint, args.initial_percent)
-        
+        else:
+            self.explo_plan = ExplorationPlan(self.topo_map, args.initial_waypoint, args.initial_percent, ac_model=explo_type, ac_coords=self._w_shape)
             
             
         self.navigating = False
