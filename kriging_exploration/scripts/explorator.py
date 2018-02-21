@@ -61,13 +61,18 @@ def overlay_image_alpha(img, img_overlay):
 class Explorator(KrigingVisualiser):
 
     #_w_shape=[(0, 16), (1, 17), (3, 17), (5, 16), (8, 15), (10, 15), (12, 14), (14, 13), (12, 12), (10, 11), (8, 11), (5, 10), (8, 9), (10, 9), (12, 8), (14, 7), (12, 6), (10, 5), (8, 5), (6, 4), (4, 3), (3, 2), (4, 1), (5, 0), (7, 0)]
-    _w_shape=[(16, 0), (17, 1), (17, 3), (16, 5), (15, 8), (15, 10), (14, 12), (13, 14), (12, 12), (11, 10), (11, 8), (10, 5), (9, 8), (9, 10), (8, 12), (7, 14), (6, 12), (5, 10), (5, 8), (4, 6), (3, 4), (2, 3), (1, 4), (0, 5), (0, 7)]
+    #_w_shape=[(17, 0), (17, 1), (17, 3), (16, 5), (15, 8), (15, 10), (14, 12), (13, 14), (12, 12), (11, 10), (11, 8), (10, 5), (9, 8), (9, 10), (8, 12), (7, 14), (6, 12), (5, 10), (5, 8), (4, 6), (3, 4), (2, 3), (1, 4), (0, 5), (0, 7)]
+    #_w_shape=[(17, 0), (17,1), (17, 2), (17, 4), (16, 4), (16, 6), (16, 8), (15, 8), (15, 10), (14, 10), (14, 12), (13, 12), (13, 14), (12, 14), (12, 12), (11, 12), (11, 10), (10, 10), (10, 8), (10, 6), (10, 4), (9, 4), (9, 6), (9, 8), (9, 10), (8, 10), (8, 12), (7, 12), (7, 14), (6, 14), (6, 12), (5, 12), (5, 10), (4, 10), (4, 8), (4, 6), (4, 4), (3, 4), (3, 3), (2, 3), (2, 4), (1,4), (1, 6), (0,6), (1, 8), (0,8), (1, 10), (0, 10), (0, 12), (0, 14)]
+    _w_shape=[(17, 0), (16, 1), (14, 6), (12, 11), (10, 14), (8, 9), (5, 14), (3, 11), (2, 6), (0, 3)]
     def __init__(self, lat_deg, lon_deg, zoom, size, args):
         self.targets = []
-
+        self.results =[]
+        self.result_counter=0
+        self.explodist=0
         self.running = True
+        self.last_coord=None
         signal.signal(signal.SIGINT, self.signal_handler)
-
+        self.expid=args.experiment_name
         print "Creating visualiser object"
         super(Explorator, self).__init__(lat_deg, lon_deg, zoom, size)
 
@@ -83,7 +88,7 @@ class Explorator(KrigingVisualiser):
         explo_type = args.area_coverage_type
         
         if explo_type=='area_split':
-            self.grid._split_area(4,6)
+            self.grid._split_area(3,3)
             sb=[]
             for i in self.grid.area_splits_coords:
                 (y, x) = self.grid.get_cell_inds_from_coords(i)
@@ -208,6 +213,9 @@ class Explorator(KrigingVisualiser):
             self.gps_canvas.clear_image()
             gps_coord = MapCoords(data.latitude,data.longitude)            
             self.gps_canvas.draw_coordinate(gps_coord,'black',size=2, thickness=2, alpha=255)
+            if self.last_coord:
+                dist = gps_coord - self.last_coord
+                self.explodist+= dist[0]
             self.last_coord=gps_coord
 
 
@@ -241,6 +249,45 @@ class Explorator(KrigingVisualiser):
                 self.grid.calculate_mean_grid()
                 self.draw_means()
                 self.draw_mode="means"
+                
+                resp = self.get_errors()
+                self.result_counter+=1
+                d={}
+                d['step']=self.result_counter
+                d['id']=self.expid
+                d['ns']=len(self.explo_plan.targets)
+                d['coord']={}
+                d['coord']['lat']=self.last_coord.lat
+                d['coord']['lon']=self.last_coord.lon
+                d['dist']=float(self.explodist)
+                d['results']={}
+                d['results']['groundtruth']=resp
+                d['results']['var']={}
+                d['results']['var']['mean']={}
+                d['results']['var']['mean']['mean']= float(np.mean(self.grid.mean_variance))
+                d['results']['var']['mean']['max']= float(np.max(self.grid.mean_variance))
+                d['results']['var']['mean']['min']= float(np.min(self.grid.mean_variance))
+                
+#                d['results']['var']['std']['mean']= np.mean(self.grid.mean_deviation)
+#                d['results']['var']['std']['max']= np.max(self.grid.mean_deviation)
+#                d['results']['var']['std']['min']= np.min(self.grid.mean_deviation)
+
+                means=[]
+                maxs=[]
+                mins=[]
+                for i in range(self.n_models):
+                    means.append(float(np.mean(self.grid.models[i].variance)))
+                    maxs.append(float(np.max(self.grid.models[i].variance)))
+                    mins.append(float(np.min(self.grid.models[i].variance)))
+                                
+                d['results']['models']={}
+                d['results']['models']['means']=means
+                d['results']['models']['maxs']=maxs
+                d['results']['models']['mins']=mins
+
+
+                
+                self.results.append(d)
                 #self.draw_mode="deviation"
 #                self.current_model=0
 #                if self.redraw_devi:
@@ -479,17 +526,6 @@ class Explorator(KrigingVisualiser):
 
 
 
-#        self.min_mean_output = np.min(self.mean_output)
-#        self.max_mean_output = np.max(self.mean_output)
-#        self.min_mean_variance = np.max(self.mean_variance)
-#        self.max_mean_variance = np.max(self.mean_variance)
-#
-#        self.mean_out_canvas = ViewerCanvas(self.base_image.shape, self.satellite.centre, self.satellite.res)
-#        self.mean_out_legend_canvas = ViewerCanvas(self.base_image.shape, self.satellite.centre, self.satellite.res)
-#        self.mean_var_canvas = ViewerCanvas(self.base_image.shape, self.satellite.centre, self.satellite.res)
-#        self.mean_var_legend_canvas = ViewerCanvas(self.base_image.shape, self.satellite.centre, self.satellite.res)
-
-
     def draw_deviation(self, nm):
         print "drawing deviation" + str(nm)
         
@@ -574,6 +610,7 @@ class Explorator(KrigingVisualiser):
                 self.redraw()
         elif k == ord('t'):
             self.krieg_all_mmodels()
+            self.grid.calculate_mean_grid()
             if self.n_models > 0:
                 self.draw_all_outputs()
                 self.draw_mode="kriging"
@@ -622,6 +659,8 @@ class Explorator(KrigingVisualiser):
                 self.exploring=1
                 self.navigating=True
                 self.open_nav_client.send_goal(targ.goal)
+                self.result_counter=0
+                self.explodist=0
             else:
                 print "Done Exploring"
                 self.exploring = 0
@@ -676,22 +715,70 @@ class Explorator(KrigingVisualiser):
         elif k== ord('r'):
             #diff = (self.grid.models[1].output - self.grid.models[0].output)
             #print np.mean(diff), np.std(diff), diff.dtype
-            shapeo = self.grid.models[0].output.shape
-            vals = np.reshape(self.grid.models[0].output, -1)
+            print self.get_errors()            
+
+        elif k== ord('o'):
+            print self.results
+            outfile = self.expid + '.yaml'
+            #print self.data_out
+            yml = yaml.safe_dump(self.results, default_flow_style=False)
+            fh = open(outfile, "w")
+            s_output = str(yml)
+            #print s_output
+            fh.write(s_output)
+            fh.close
+
             
-            print vals
-            print "Waiting for Service"
-            rospy.wait_for_service('/compare_model')
-            try:
-                print "going for it"
-                compare_serv = rospy.ServiceProxy('/compare_model', CompareModels)
-                resp1 = compare_serv('kriging', 0, shapeo[0], shapeo[1], vals.tolist())
-                print resp1
-            except rospy.ServiceException, e:
-                print "Service call failed: %s"%e            
             
 
-    
+    def get_errors(self):
+        error_chain=[]
+        shapeo = self.grid.models[0].output.shape
+        
+        #print vals
+        print "Waiting for Service"
+        rospy.wait_for_service('/compare_model')
+        compare_serv = rospy.ServiceProxy('/compare_model', CompareModels)
+        
+        for i in range(self.n_models):
+            try:
+                d={}
+                print "going for it ", i
+                vals = np.reshape(self.grid.models[i].output, -1)
+                resp1 = compare_serv('kriging', i, shapeo[0], shapeo[1], vals.tolist())
+                d['name']= self.grid.models[i].name
+                d['type']= 'kriging'
+                d['errors']={}
+                d['errors']['error']=resp1.error
+                d['errors']['mse']=resp1.mse
+                d['errors']['std']=resp1.std
+                d['errors']['var']=resp1.var
+                #print resp1
+                error_chain.append(d)
+            except rospy.ServiceException, e:
+                print "Service call failed: %s"%e    
+                
+        try:
+            d={}
+            print "Mean "
+            vals = np.reshape(self.grid.mean_output, -1)
+            resp1 = compare_serv('mean', 0, shapeo[0], shapeo[1], vals.tolist())
+            #print self.grid.mean_output
+            d['name']= 'mean'
+            d['type']= 'mean'
+            d['errors']={}
+            d['errors']['error']=resp1.error
+            d['errors']['mse']=resp1.mse
+            d['errors']['std']=resp1.std
+            d['errors']['var']=resp1.var
+
+            #print resp1
+            error_chain.append(d)
+        except rospy.ServiceException, e:
+            print "Service call failed: %s"%e        
+        
+        
+        return error_chain
     
     def signal_handler(self, signal, frame):
         self.running = False
@@ -713,6 +800,8 @@ if __name__ == '__main__':
                         help="Percentage of cells to be explored on the initial plan")
     parser.add_argument("--area_coverage_type", type=str, default='area_split',
                         help="Type of area coverage, random or area_split")
+    parser.add_argument("--experiment_name", type=str, default='exp1',
+                        help="Experiment ID")
     args = parser.parse_args()
     
     rospy.init_node('kriging_exploration')

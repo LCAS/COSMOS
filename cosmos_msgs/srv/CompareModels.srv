@@ -6,5 +6,6 @@ float64[] vals
 ------
 bool sucess
 float32 error
+float32 mse
 float32 std
 float32 var

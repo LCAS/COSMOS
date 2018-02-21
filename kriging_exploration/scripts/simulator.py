@@ -86,8 +86,7 @@ class simulator(object):
         self.load_groundtruth('upper_testing.yaml')
         
         self.krieg_all_mmodels()
-
-
+        self.grid.calculate_mean_grid()
         
         self.image = self.satellite.base_image.copy()
         while(self.running):
@@ -95,11 +94,17 @@ class simulator(object):
             k = cv2.waitKey(20) & 0xFF
             self._change_mode(k)
 
+
+
     def model_comparison_cb(self, req):
         print req.model_name, req.model_index, req.height, req.width
         compm = np.reshape(np.asarray(req.vals), (req.height, req.width))
-        diff = self.grid.models[0].output-compm
-        return True, np.mean(diff), np.std(diff), np.var(diff)
+        if req.model_name == 'kriging':
+            diff = self.grid.models[req.model_index].output-compm
+        else :
+            diff = self.grid.mean_output-compm
+        return True, np.mean(diff), np.mean(diff**2), np.std(diff), np.var(diff)
+
 
     def load_groundtruth(self, filename):
         self.grid.load_data_from_yaml(filename)

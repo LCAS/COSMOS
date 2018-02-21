@@ -81,8 +81,9 @@ class DataGrid(object):
                     #print j['position']
                     b = MapCoords(j['position']['lat'],j['position']['lon'])
                     cx, cy = self.get_cell_inds_from_coords(b)
-                    dt.append(KriggingDataPoint(b,(cx,cy),j['data'][i]))
-                    print cx, cy
+                    if cx >= 0 and cy >= 0:
+                        dt.append(KriggingDataPoint(b,(cx,cy),j['data'][i]))
+                        print cx, cy
                     #print b
                     print j['data'][i]
             kd.add_data(dt)

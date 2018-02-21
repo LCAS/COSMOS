@@ -46,7 +46,7 @@ class KriggingData(object):
                        
         print "OK"
         print datablah
-        OK = OrdinaryKriging(datablah[:, 0], datablah[:, 1], datablah[:, 2], variogram_model='linear', verbose=False, enable_plotting=False)
+        OK = OrdinaryKriging(datablah[:, 0], datablah[:, 1], datablah[:, 2], variogram_model='exponential', verbose=False, enable_plotting=False)
         print "OK Done"
 
         try:
