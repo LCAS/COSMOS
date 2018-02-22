@@ -194,7 +194,7 @@ class ExplorationPlan(object):
         suma = np.sum(varis)
         scores = []
         for i in varis:
-            kkl = np.ceil((varis[i] *100)/suma)
+            kkl = np.ceil((i*1000)/suma)
             scores.append(int(kkl))
 #        print "Going To:"
         print varis, scores, var_cut
