@@ -168,10 +168,10 @@ class ExplorationPlan(object):
         #print maxes
         maxind=0
         
-        #var_average= np.mean(model_variance)
+        var_average= np.mean(model_variance)
         #var_std= np.std(model_variance)
         
-        var_cut=100#var_average-(var_std)
+        var_cut=var_average#-(var_std)
         varis=[]
         wps=[]
         
