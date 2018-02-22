@@ -10,6 +10,7 @@ import open_nav.msg
 
 from geometry_msgs.msg import Twist
 
+from cosmos_msgs.srv import TeleportRobot
 from kriging_exploration.map_coords import MapCoords
 
 class opennavserver(object):
@@ -17,11 +18,11 @@ class opennavserver(object):
     _feedback = open_nav.msg.OpenNavActionFeedback()
     _result   = open_nav.msg.OpenNavResult()
 
-    def __init__(self, name):
+    def __init__(self, name, teleport=False):
         self.cancelled = False
         self._action_name = name
         self.first_fix = True
-        
+        self.teleport = teleport
         self.maxxvel = 4.0
         self.maxangvel = 1.0
         
@@ -65,14 +66,31 @@ class opennavserver(object):
         goal_coord = MapCoords(goal.coords.latitude,goal.coords.longitude)
 
         print "RESULT"
-        print self.gps_coord - goal_coord
+        #print self.gps_coord - goal_coord
 
-        result = self.navigate(goal_coord)
-        
-        if not self.cancelled :
-            print result
-            self._result.success = result
-            self._as.set_succeeded(self._result)
+        if not self.teleport:
+            result = self.navigate(goal_coord)
+            
+            if not self.cancelled :
+                print result
+                self._result.success = result
+                self._as.set_succeeded(self._result)
+        else:
+            rospy.wait_for_service('/teleport_robot')
+            try:
+                print 
+                teleport = rospy.ServiceProxy('/teleport_robot', TeleportRobot)
+                result = teleport(goal.coords)
+                print result
+                rospy.sleep(0.5)
+                self._result.success = True#result.success
+                self._as.set_succeeded(self._result)
+            except rospy.ServiceException, e:
+                print "Service call failed: %s"%e
+                result = False
+                self._result.success = result
+                self._as.set_succeeded(self._result)
+                
 
 
     def navigate(self, goal_coord):
@@ -123,4 +141,4 @@ class opennavserver(object):
 
 if __name__ == '__main__':
     rospy.init_node('open_nav')
-    server = opennavserver(rospy.get_name())
+    server = opennavserver(rospy.get_name(), teleport=True)

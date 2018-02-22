@@ -39,6 +39,7 @@ add_message_files(
 add_service_files(
    FILES
    CompareModels.srv
+   TeleportRobot.srv
 #   Service2.srv
 )
 

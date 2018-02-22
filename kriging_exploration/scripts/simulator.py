@@ -83,7 +83,8 @@ class simulator(object):
 
         #self.load_groundtruth('Iains2.yaml')
         #self.load_groundtruth('bottom_testing.yaml')
-        self.load_groundtruth('upper_testing.yaml')
+        #self.load_groundtruth('upper_testing.yaml')
+        self.load_groundtruth('testing-5cm-intervals.yaml')
         
         self.krieg_all_mmodels()
         self.grid.calculate_mean_grid()

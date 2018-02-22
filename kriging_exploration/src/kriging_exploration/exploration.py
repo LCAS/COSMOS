@@ -47,16 +47,23 @@ def line_intersection(l1, l2):
 
 
 class ExplorationPlan(object):
-    def __init__(self, topo_map, initial_waypoint, percentage=0.05, ac_model='random', ac_coords=[]):
+    def __init__(self, topo_map, initial_waypoint, percentage=0.05, exploration_type='ac', ac_model='random', ac_coords=[]):
         self.max_iters=1000        
         self.targets=[]
         self.explored_wp=[]
         self.route=[]
         self.route_nodes=[]
-        if ac_model=='random':
-            self._generate_targets(topo_map, initial_waypoint, percentage)
+        self.tmap = topo_map
+        
+        if exploration_type == 'ac':
+            if ac_model=='random':
+                self._generate_targets(topo_map, initial_waypoint, percentage)
+            else:
+                self._get_ac_targets(topo_map, initial_waypoint, ac_coords)
         else:
-            self._get_ac_targets(topo_map, initial_waypoint, ac_coords)
+            self.get_greedy_initial_goals(initial_waypoint)
+
+
             
         #print self.targets
         self._get_plan(initial_waypoint)
@@ -66,7 +73,166 @@ class ExplorationPlan(object):
         for i in self.targets:
             if i.name == wp:
                 return i
+    
+    def _find_wp(self, wpname):
+        for i in self.tmap.waypoints:
+            if i.name == wpname:
+                return i
+    
+    def _find_in_route(self,wp_name):
+        found =False
+        for i in self.route:
+            if i.name == wp_name:
+                found=True
+                return found
+        
+        for i in self.explored_wp:
+            if i.name == wp_name:
+                found=True
+                return found
+        
+        return found
+    
+    def add_greedy_goal(self, model_variance):
+        print "getting Greedy..."
+        #x ,y =np.where(model_variance==np.max(model_variance))
+        #print x,y
+        
+        found = False
+        maxes1= np.copy(model_variance)
+        print maxes1
+        maxes = np.reshape(maxes1, -1)
+        print "-------"
+        maxes.sort()
+        maxes = maxes[::-1]
+        print maxes
+        maxind=0
+        while not found:
+            x ,y = np.where(model_variance==maxes[maxind])
+            print "looking for: ", maxes[maxind], " (", x[0],",",y[0],")"
+            for j in self.tmap.waypoints:
+                if (x[0],y[0]) == j.ind:
+                    if not self._find_in_route(j.name):
+                        to_append=j                        
+                        found=True
+                        break
+            maxind+=1
+        print "Going To:"
+        print to_append
+
+        self.route.append(to_append) 
+
+
+    def add_limited_greedy_goal(self, model_variance, current_coord):
+        print "getting Greedy..."
+        #x ,y =np.where(model_variance==np.max(model_variance))
+        #print x,y
+        
+        found = False
+        maxes1= np.copy(model_variance)
+        print maxes1
+        maxes = np.reshape(maxes1, -1)
+        print "-------"
+        maxes.sort()
+        maxes = maxes[::-1]
+        print maxes
+        maxind=0
+        while not found:
+            x ,y = np.where(model_variance==maxes[maxind])
+            print "looking for: ", maxes[maxind], " (", x[0],",",y[0],")"
+            for j in self.tmap.waypoints:
+                if (x[0],y[0]) == j.ind:
+                    dist = j.coord - current_coord
+                    if not self._find_in_route(j.name) and np.abs(dist[0]) < 48 :
+                        to_append=j                        
+                        found=True
+                        break
+            maxind+=1
+        print "Going To:"
+        print to_append
+
+        self.route.append(to_append)
+
+
+
+    def add_montecarlo_goal(self, model_variance, current_coord):
+        print "getting Greedy..."
+        
+        found = False
+        maxes1= np.copy(model_variance)
+        #print maxes1
+        maxes = np.reshape(maxes1, -1)
+        #print "-------"
+        maxes.sort()
+        maxes = maxes[::-1]
+        #print maxes
+        maxind=0
+        
+        #var_average= np.mean(model_variance)
+        #var_std= np.std(model_variance)
+        
+        var_cut=100#var_average-(var_std)
+        varis=[]
+        wps=[]
+        
+        while not found:
+            x ,y = np.where(model_variance==maxes[maxind])
+            #print "looking for: ", maxes[maxind], " (", x[0],",",y[0],")"
+            for j in self.tmap.waypoints:
+                if (x[0],y[0]) == j.ind:
+                    dist = j.coord - current_coord
+                    if not self._find_in_route(j.name) and np.abs(dist[0]):# < 50 :
+                        wps.append(j)
+                        varis.append(maxes[maxind])
+            
+            if maxes[maxind] > var_cut:
+                maxind+=1                
+            else:
+                found=True
+                break
+        
+        suma = np.sum(varis)
+        scores = []
+        for i in varis:
+            kkl = np.ceil((i *100)/suma)
+            scores.append(int(kkl))
+#        print "Going To:"
+        print varis, scores, var_cut
+        mctargets=[]
+        
+        for i in range(len(varis)):
+            for j in range(scores[i]):
+                mctargets.append(wps[i])
                 
+        #print mctargets, len(mctargets)
+        np.random.shuffle(mctargets)
+        inds=np.random.randint(len(mctargets))
+        self.route.append(mctargets[inds])
+
+
+
+
+    def get_greedy_initial_goals(self, initial_waypoint):
+        names=[]
+        print "getting greedy init"
+        iwp = self._find_wp(initial_waypoint)
+        print iwp
+        self.targets.append(iwp)
+        names.append(iwp.name)
+        print("finding 4 candidates in range")
+        drange= np.sqrt(50)*5
+        ntargs=1
+        while ntargs<4:
+            nind=np.random.randint(0, len(self.tmap.waypoints))
+            pwp=self.tmap.waypoints[nind]
+            dist= pwp.coord - iwp.coord
+            if np.abs(dist[0]) < drange and pwp.name not in names:
+                ntargs+=1
+                self.targets.append(pwp)
+                names.append(pwp.name)
+                
+    
+    
     def _get_ac_targets(self, topo_map, initial_waypoint, ac_coords):
         
         for i in ac_coords:
@@ -89,6 +255,7 @@ class ExplorationPlan(object):
     
     def _generate_targets(self, topo_map, initial_waypoint, percentage):
         ntargets = int(np.ceil(len(topo_map.waypoints))*percentage)
+
         N = 0
         for item in topo_map.waypoints:
             N += 1

@@ -86,19 +86,8 @@ class Explorator(KrigingVisualiser):
         self.visited_wp=[]
 
         explo_type = args.area_coverage_type
+        self.define_exploration_type(explo_type)
         
-        if explo_type=='area_split':
-            self.grid._split_area(3,3)
-            sb=[]
-            for i in self.grid.area_splits_coords:
-                (y, x) = self.grid.get_cell_inds_from_coords(i)
-                sb.append((x,y))
-            self.explo_plan = ExplorationPlan(self.topo_map, args.initial_waypoint, args.initial_percent, ac_model=explo_type, ac_coords=sb)
-        elif explo_type=='random':
-            self.explo_plan = ExplorationPlan(self.topo_map, args.initial_waypoint, args.initial_percent)
-        else:
-            self.explo_plan = ExplorationPlan(self.topo_map, args.initial_waypoint, args.initial_percent, ac_model=explo_type, ac_coords=self._w_shape)
-            
             
         self.navigating = False
         self.pause_exp = False
@@ -166,6 +155,28 @@ class Explorator(KrigingVisualiser):
         tim2.shutdown()
         cv2.destroyAllWindows()       
         sys.exit(0)
+
+
+    # EXPLORATION PARAMS HERE!!!!
+    def define_exploration_type(self, explo_type):
+        self.exploration_strategy=explo_type    
+        self.n_goals=50        
+        
+        if explo_type=='area_split':
+            self.grid._split_area(7,7)
+            sb=[]
+            for i in self.grid.area_splits_coords:
+                (y, x) = self.grid.get_cell_inds_from_coords(i)
+                sb.append((x,y))
+            self.explo_plan = ExplorationPlan(self.topo_map, args.initial_waypoint, args.initial_percent, ac_model=explo_type, ac_coords=sb)
+        elif explo_type=='random':
+            self.explo_plan = ExplorationPlan(self.topo_map, args.initial_waypoint, args.initial_percent)
+        elif explo_type=='w_shape':
+            self.explo_plan = ExplorationPlan(self.topo_map, args.initial_waypoint, args.initial_percent, ac_model=explo_type, ac_coords=self._w_shape)
+        else: #greedy
+            self.explo_plan = ExplorationPlan(self.topo_map, args.initial_waypoint, args.initial_percent, exploration_type='greedy', ac_model=explo_type)
+
+
 
 
     def drawing_timer_callback(self, event):
@@ -246,7 +257,9 @@ class Explorator(KrigingVisualiser):
         if self.exploring==3:
             if self.n_inputs>3:
                 self.krieg_all_mmodels()
+                rospy.sleep(0.1)
                 self.grid.calculate_mean_grid()
+                rospy.sleep(0.1)
                 self.draw_means()
                 self.draw_mode="means"
                 
@@ -286,13 +299,24 @@ class Explorator(KrigingVisualiser):
                 d['results']['models']['mins']=mins
 
 
-                
+                rospy.sleep(0.1)
                 self.results.append(d)
+                if self.exploration_strategy == 'greedy':
+                    nwp = len(self.explo_plan.route) + len(self.explo_plan.explored_wp)
+                    print nwp, " nodes in plan"
+                    if nwp <= self.n_goals:
+                        #THIS IS the ONE
+                        # self.explo_plan.add_limited_greedy_goal(self.grid.mean_variance, self.last_coord) 
+                
+                        self.explo_plan.add_montecarlo_goal(self.grid.mean_variance, self.last_coord)
+                
+                
                 #self.draw_mode="deviation"
 #                self.current_model=0
 #                if self.redraw_devi:
 #                    self.draw_all_devs()
                 self.redraw()
+                rospy.sleep(0.1)
             self.exploring=4
 
     def scan_callback(self, msg):
@@ -493,7 +517,7 @@ class Explorator(KrigingVisualiser):
 
 
     def draw_means(self):
-        print "drawing mean deviation"
+        print "drawing mean deviation ..."
         
         minv =  self.grid.min_mean_deviation
         maxv =  self.grid.max_mean_deviation

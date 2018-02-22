@@ -182,10 +182,21 @@ class DataGrid(object):
         self.mean_variance=np.full(self.shape,0,dtype=np.float64)
         self.mean_deviation=np.full(self.shape,0,dtype=np.float64)
         for i in range(self.shape[0]):
-            for j in range(self.shape[1]):                
-                self.mean_output[i][j]=np.average([x.output[i][j] for x in self.models])
-                self.mean_variance[i][j]=np.average([x.variance[i][j] for x in self.models])
-                self.mean_deviation[i][j]=np.average([x.deviation[i][j] for x in self.models])
+            for j in range(self.shape[1]):   
+                ou1=np.asarray([x.output[i][j] for x in self.models])
+                if np.isnan(ou1).any():
+                    print("NAN in outputs!!", ou1, i, j)
+                self.mean_output[i][j]=np.mean(ou1)
+                
+                var1=np.asarray([x.variance[i][j] for x in self.models])
+                if np.isnan(ou1).any():
+                    print("NAN in variances!!", var1, i, j)
+                self.mean_variance[i][j]=np.mean(var1)
+                
+                dv1=np.asarray([x.deviation[i][j] for x in self.models])
+                if np.isnan(dv1).any():
+                    print("NAN in devs!!", dv1, i, j)
+                self.mean_deviation[i][j]=np.mean(dv1)
         
         
         self.min_mean_output = np.min(self.mean_output)
@@ -194,7 +205,12 @@ class DataGrid(object):
         self.max_mean_variance = np.max(self.mean_variance)
         self.min_mean_deviation = np.min(self.mean_deviation)
         self.max_mean_deviation = np.max(self.mean_deviation)
+        
         print "-----"
+        if np.isnan(self.min_mean_deviation) or np.isnan(self.max_mean_deviation):
+            print "CAUTION!!!"
+            print self.mean_deviation
+            
         print self.min_mean_deviation, self.max_mean_deviation
         #print self.mean_deviation
         print "-----"
