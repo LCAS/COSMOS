@@ -160,10 +160,10 @@ class Explorator(KrigingVisualiser):
     # EXPLORATION PARAMS HERE!!!!
     def define_exploration_type(self, explo_type):
         self.exploration_strategy=explo_type    
-        self.n_goals=50        
+        self.n_goals=10   
         
         if explo_type=='area_split':
-            self.grid._split_area(7,7)
+            self.grid._split_area(3,3)
             sb=[]
             for i in self.grid.area_splits_coords:
                 (y, x) = self.grid.get_cell_inds_from_coords(i)
@@ -306,9 +306,11 @@ class Explorator(KrigingVisualiser):
                     print nwp, " nodes in plan"
                     if nwp <= self.n_goals:
                         #THIS IS the ONE
-                        # self.explo_plan.add_limited_greedy_goal(self.grid.mean_variance, self.last_coord) 
+                        #self.explo_plan.add_limited_greedy_goal(self.grid.mean_variance, self.last_coord) 
+                        
+                        self.explo_plan.add_greedy_goal(self.grid.mean_variance)
                 
-                        self.explo_plan.add_montecarlo_goal(self.grid.mean_variance, self.last_coord)
+                        #self.explo_plan.add_montecarlo_goal(self.grid.mean_variance, self.last_coord)
                 
                 
                 #self.draw_mode="deviation"

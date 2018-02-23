@@ -181,7 +181,7 @@ class ExplorationPlan(object):
             for j in self.tmap.waypoints:
                 if (x[0],y[0]) == j.ind:
                     dist = j.coord - current_coord
-                    if not self._find_in_route(j.name) and np.abs(dist[0]):# < 50 :
+                    if not self._find_in_route(j.name) and np.abs(dist[0]) < 50 :
                         wps.append(j)
                         varis.append(maxes[maxind])
             
