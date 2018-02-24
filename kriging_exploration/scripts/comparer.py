@@ -73,8 +73,11 @@ class comparer(object):
         diff = self.grid.mean_output-self.grid2.mean_output
         print "mean", np.mean(diff), np.sqrt(np.mean(diff**2)), np.std(diff), np.var(diff)
         names.append('mean')
-        means.append(np.abs(np.mean(diff)))
-        stds.append(np.abs(np.std(diff))/2.0)
+#        means.append(np.abs(np.mean(diff)))
+#        stds.append(np.abs(np.std(diff))/2.0)
+        means.append(np.abs(np.mean(self.grid.mean_output)))
+        stds.append(np.abs(np.sqrt(np.mean(diff**2))/2.0))
+
         #np.save('mean.csv', diff)
         np.savetxt("mean.csv", diff, delimiter=",")
         
@@ -84,10 +87,13 @@ class comparer(object):
             print i, np.mean(diff), np.sqrt(np.mean(diff**2)), np.std(diff), np.var(diff)
             nstr= str(i*5)+'-'+str((i+1)*5)
             names.append(nstr)
-            means.append(np.abs(np.mean(diff)))
-            stds.append(np.abs(np.std(diff)/2.0))
+            #means.append(np.abs(np.mean(diff)))
+            #stds.append(np.abs(np.std(diff)/2.0))
+            means.append(np.abs(np.mean(self.grid.models[i].output)))
+            stds.append(np.abs(np.sqrt(np.mean(diff**2))/2.0))
             np.savetxt(nstr, diff, delimiter=",")
             
+        #self.graph_layers(names, means, stds)
         self.graph_layers(names, means, stds)
 
     def graph_layers(self, names, means, stds):
