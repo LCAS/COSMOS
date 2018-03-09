@@ -27,7 +27,9 @@ class SimpleDataVisualiser(KrigingVisualiser):
 
         initial_gps = rospy.wait_for_message("/navsat_fix", NavSatFix, 10)
         self.initial_odom = rospy.wait_for_message("/odometry", Odometry, 10)
-        self.initial_godom = rospy.wait_for_message("/gps_odom", Odometry, 10)        
+        self.initial_godom2 = rospy.wait_for_message("/mtig/odometry", Odometry, 10)
+        self.initial_godom = rospy.wait_for_message("/novatel/odometry", Odometry, 10)
+        self.initial_godom3 = rospy.wait_for_message("/odometry/filtered_map", Odometry, 10)        
         
         print initial_gps
 
@@ -37,13 +39,17 @@ class SimpleDataVisualiser(KrigingVisualiser):
         self.gps_canvas = ViewerCanvas(self.base_image.shape, self.satellite.centre, self.satellite.res)
         self.compass_canvas = ViewerCanvas(self.base_image.shape, self.satellite.centre, self.satellite.res)
         
-        self.preodom= self.centre                
+        self.preodom= self.centre 
+        self.preodom2= self.centre 
+        self.preodom3= self.centre              
         
         rospy.loginfo("Subscribing to GPS Data")
         rospy.Subscriber("/navsat_fix", NavSatFix, self.gps_callback)
         rospy.Subscriber("/fix", NavSatFix, self.mti_callback)
-        rospy.Subscriber("/odometry", Odometry, self.odom_callback)
-        rospy.Subscriber("/gps_odom", Odometry, self.godom_callback)        
+        #rospy.Subscriber("/odometry", Odometry, self.odom_callback)
+        rospy.Subscriber("/odometry/filtered_map", Odometry, self.godom3_callback)
+        #rospy.Subscriber("/mtig/odometry", Odometry, self.godom2_callback)  
+        #rospy.Subscriber("/novatel/odometry", Odometry, self.godom_callback)      
         
         while(self.running):
             self.refresh()
@@ -63,6 +69,27 @@ class SimpleDataVisualiser(KrigingVisualiser):
         self.preodom = odom_coord
         self.gps_canvas.draw_coordinate(odom_coord, 'yellow',size=2, thickness=1, alpha=255)
         #self.draw_coordinate(odom_coord.lat, odom_coord.lon,'yellow',size=2, thickness=1, alpha=255)
+
+    def godom2_callback(self, data):
+        d = utm.to_latlon(data.pose.pose.position.x, data.pose.pose.position.y, self.centre.zone_number, zone_letter=self.centre.zone_letter)
+        
+        odom_coord = MapCoords(d[0],d[1])
+             
+        diff = odom_coord - self.preodom2
+        
+        self.draw_compass(diff)
+        self.preodom2 = odom_coord
+        self.gps_canvas.draw_coordinate(odom_coord, 'black',size=2, thickness=1, alpha=255)
+        #self.draw_coordinate(odom_coord.lat, odom_coord.lon,'yellow',size=2, thickness=1, alpha=255)
+
+    def godom3_callback(self, data):
+        dx = data.pose.pose.position.x - self.initial_godom3.pose.pose.position.x
+        dy = data.pose.pose.position.y - self.initial_godom3.pose.pose.position.y
+        #print dx, dy
+        odom_coord = self.centre._get_rel_point(-dy, dx)
+        #self.gps_canvas.draw_coordinate(odom_coord,'green',size=2, thickness=1, alpha=255)
+        self.gps_canvas.draw_coordinate(odom_coord, 'magenta',size=2, thickness=1, alpha=255)
+        #self.draw_coordinate(odom_coord.lat, odom_coord.lon,'yellow',size=2, thickness=1, alpha=255)    
 
     def draw_compass(self, diff):
         print diff
@@ -86,7 +113,7 @@ class SimpleDataVisualiser(KrigingVisualiser):
     def gps_callback(self, data):
         if not np.isnan(data.latitude):
             gps_coord = MapCoords(data.latitude,data.longitude)
-            self.gps_canvas.draw_coordinate(gps_coord,'red',size=2, thickness=1, alpha=255)
+            self.gps_canvas.draw_coordinate(gps_coord,'blue',size=2, thickness=1, alpha=255)
 #            self.draw_coordinate(data.latitude, data.longitude,'red',size=2, thickness=1, alpha=255)
 
     def mti_callback(self, data):
